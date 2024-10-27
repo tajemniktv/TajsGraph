@@ -10,7 +10,10 @@ struct FTajsGraph_ConfigStruct {
     GENERATED_BODY()
 public:
     UPROPERTY(BlueprintReadWrite)
-    bool bEnableVSM{};
+    bool enableVSM{};
+
+    UPROPERTY(BlueprintReadWrite)
+    bool enableLumen{};
 
     /* Retrieves active configuration value and returns object of this struct containing it */
     static FTajsGraph_ConfigStruct GetActiveConfig(UObject* WorldContext) {
