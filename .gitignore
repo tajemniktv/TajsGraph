@@ -75,3 +75,6 @@ DerivedDataCache/*
 
 # Could you stop uploading my IDE  settings?
 .idea/*
+
+# Remove content upload since I'm not sure about uploading sourcecode for some of these assets
+Content/*
