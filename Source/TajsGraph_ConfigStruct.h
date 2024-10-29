@@ -4,16 +4,33 @@
 #include "Engine/Engine.h"
 #include "TajsGraph_ConfigStruct.generated.h"
 
-/* Struct generated from Mod Configuration Asset '/TajsGraph/TajsGraph_Config' */
+struct FTajsGraph_ConfigStruct_Shadows;
+struct FTajsGraph_ConfigStruct_Lumen;
+
+USTRUCT(BlueprintType)
+struct FTajsGraph_ConfigStruct_Shadows {
+    GENERATED_BODY()
+public:
+    UPROPERTY(BlueprintReadWrite)
+    bool enableVSM{};
+};
+
+USTRUCT(BlueprintType)
+struct FTajsGraph_ConfigStruct_Lumen {
+    GENERATED_BODY()
+public:
+};
+
+/* Struct generated from Mod Configuration Asset '/TajsGraph/Settings/TajsGraph_Config' */
 USTRUCT(BlueprintType)
 struct FTajsGraph_ConfigStruct {
     GENERATED_BODY()
 public:
     UPROPERTY(BlueprintReadWrite)
-    bool enableVSM{};
+    FTajsGraph_ConfigStruct_Shadows Shadows{};
 
     UPROPERTY(BlueprintReadWrite)
-    bool enableLumen{};
+    FTajsGraph_ConfigStruct_Lumen Lumen{};
 
     /* Retrieves active configuration value and returns object of this struct containing it */
     static FTajsGraph_ConfigStruct GetActiveConfig(UObject* WorldContext) {
