@@ -1,0 +1,315 @@
+/* Global Variables */
+:root {
+    --primary-color: #663399;
+    --primary-light: #8855cc;
+    --text-color: #e1e1e1;
+    --bg-color: #121212;
+    --surface-color: #1e1e1e;
+    --surface-hover: #2a2a2a;
+    --accent-purple-dark: #4a2673;
+    --code-bg: #2d2d2d;
+}
+
+/* Reset and Basic Styling */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    line-height: 1.6;
+    color: var(--text-color);
+    background-color: var(--bg-color);
+}
+
+/* Navbar */
+.navbar {
+    background-color: var(--surface-color);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    position: fixed;
+    width: 100%;
+    top: 0;
+    z-index: 1000;
+    padding: 1rem 0;
+}
+
+.navbar-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 2rem;
+}
+
+.logo {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: var(--primary-color);
+    text-decoration: none;
+}
+
+.nav-links {
+    display: flex;
+    gap: 2rem;
+}
+
+.nav-links a {
+    color: var(--text-color);
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.3s ease;
+}
+
+.nav-links a:hover {
+    color: var(--primary-light);
+}
+
+/* Hero Section */
+.hero {
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    position: relative; /* Position relative for pseudo-element overlay */
+    color: var(--text-color);
+    padding: 0 2rem;
+    margin-top: 60px;
+    background: linear-gradient(
+            rgba(18, 18, 18, 0.6),
+            rgba(18, 18, 18, 0.6)
+    ),
+    url('Site/assets/background.jpg') center center/cover no-repeat; /* Replace with the actual path */
+}
+
+.hero-content {
+    position: relative; /* Ensure the content sits above the overlay */
+    max-width: 800px;
+    z-index: 1; /* Keep content above shadowed background */
+}
+
+.hero h1 {
+    font-size: 3.5rem;
+    margin-bottom: 1rem;
+    color: var(--text-color);
+    text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.6); /* Extra shadow for depth */
+}
+
+.hero p {
+    font-size: 1.25rem;
+    margin-bottom: 2rem;
+    color: #a0a0a0;
+}
+
+.cta-button {
+    display: inline-block;
+    padding: 1rem 2rem;
+    background-color: var(--primary-color);
+    color: white;
+    text-decoration: none;
+    border-radius: 5px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.cta-button:hover {
+    background-color: var(--primary-light);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
+}
+
+
+/* Features Section */
+.features {
+    padding: 6rem 2rem;
+    background-color: var(--surface-color);
+}
+
+.features-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+}
+
+.feature-card {
+    background: var(--bg-color);
+    padding: 2rem;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+    transition: all 0.3s ease;
+}
+
+.feature-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+    background: var(--surface-hover);
+}
+
+.feature-card h3 {
+    color: var(--primary-light);
+    margin-bottom: 1rem;
+    font-size: 1.5rem;
+}
+
+.feature-card p {
+    color: #a0a0a0;
+}
+
+/* Sidebar (Docs Page) */
+.sidebar {
+    width: 300px;
+    background-color: var(--surface-color);
+    padding: 2rem;
+    position: fixed;
+    height: 100vh;
+    overflow-y: auto;
+    padding-top: 5rem;
+}
+
+.sidebar-nav {
+    list-style: none;
+}
+
+.sidebar-nav li {
+    margin-bottom: 0.5rem;
+}
+
+.sidebar-nav a {
+    color: var(--text-color);
+    text-decoration: none;
+    display: block;
+    padding: 0.5rem;
+    border-radius: 4px;
+    transition: all 0.3s ease;
+}
+
+.sidebar-nav a:hover {
+    background-color: var(--surface-hover);
+    color: var(--primary-light);
+}
+
+.sidebar-nav .section-title {
+    color: var(--primary-light);
+    font-weight: bold;
+    margin-top: 1.5rem;
+    margin-bottom: 0.5rem;
+}
+
+/* Main Content Area for Docs */
+.main-content {
+    margin-left: 300px;
+    padding: 5rem 2rem 2rem;
+    flex: 1;
+    max-width: 900px;
+}
+
+.doc-section {
+    margin-bottom: 3rem;
+}
+
+.doc-section h1, .doc-section h2, .doc-section h3 {
+    color: var(--primary-light);
+}
+
+.doc-section h1 {
+    font-size: 2.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.doc-section h2 {
+    font-size: 1.8rem;
+    margin: 2rem 0 1rem;
+}
+
+.doc-section h3 {
+    font-size: 1.4rem;
+    margin: 1.5rem 0 1rem;
+}
+
+.doc-section p, .doc-section ul, .doc-section ol, .doc-section li {
+    color: #a0a0a0;
+}
+
+.info-box, .warning-box {
+    background-color: var(--surface-color);
+    padding: 1rem;
+    margin: 1rem 0;
+    border-radius: 0 4px 4px 0;
+}
+
+.info-box {
+    border-left: 4px solid var(--primary-color);
+}
+
+.warning-box {
+    border-left: 4px solid #e6b800;
+}
+
+code {
+    background-color: var(--code-bg);
+    padding: 0.2rem 0.4rem;
+    border-radius: 4px;
+    font-family: 'Consolas', monospace;
+}
+
+pre {
+    background-color: var(--code-bg);
+    padding: 1rem;
+    border-radius: 4px;
+    overflow-x: auto;
+    margin: 1rem 0;
+}
+
+/* Footer */
+.footer {
+    background-color: var(--surface-color);
+    padding: 3rem 2rem;
+    margin-top: 4rem;
+    text-align: center;
+}
+
+.footer-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 3rem;
+}
+
+.footer-section h4 {
+    color: var(--primary-light);
+    font-size: 1.2rem;
+}
+
+.footer-section ul {
+    list-style: none;
+}
+
+.footer-section a {
+    color: #a0a0a0;
+    text-decoration: none;
+}
+
+.footer-section a:hover {
+    color: var(--primary-light);
+}
+
+@media (max-width: 768px) {
+    .hero h1 {
+        font-size: 2.5rem;
+    }
+
+    .nav-links, .sidebar {
+        display: none;
+    }
+
+    .main-content {
+        margin-left: 0;
+    }
+}

@@ -19,6 +19,8 @@ USTRUCT(BlueprintType)
 struct FTajsGraph_ConfigStruct_Lumen {
     GENERATED_BODY()
 public:
+    UPROPERTY(BlueprintReadWrite)
+    bool enableLUMEN{};
 };
 
 /* Struct generated from Mod Configuration Asset '/TajsGraph/Settings/TajsGraph_Config' */
