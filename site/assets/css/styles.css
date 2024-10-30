@@ -384,6 +384,7 @@ body {
 }
 
 /* Documentation Styling */
+/
 .sidebar {
     width: 300px;
     background-color: var(--surface-color);
