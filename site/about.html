@@ -4,7 +4,297 @@
     <meta charset="UTF-8">
     <meta content="width=device-width, initial-scale=1.0" name="viewport">
     <title>About - Taj's Graphical Overhaul</title>
-    <link href="assets/css/styles.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #663399;
+            --primary-light: #8855cc;
+            --text-color: #e1e1e1;
+            --bg-color: #121212;
+            --surface-color: #1e1e1e;
+            --surface-hover: #2a2a2a;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--bg-color);
+        }
+
+        .navbar {
+            background-color: var(--surface-color);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            position: fixed;
+            width: 100%;
+            top: 0;
+            z-index: 1000;
+            padding: 1rem 0;
+        }
+
+        .navbar-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 2rem;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+        }
+
+        .nav-links a {
+            color: var(--text-color);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s ease;
+        }
+
+        .nav-links a:hover {
+            color: var(--primary-light);
+        }
+
+        .about-header {
+            margin-top: 80px;
+            padding: 6rem 2rem;
+            text-align: center;
+            background-color: var(--surface-color);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .about-header h1 {
+            font-size: 3rem;
+            color: var(--primary-light);
+            margin-bottom: 1.5rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .about-header p {
+            color: #a0a0a0;
+            max-width: 700px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
+        }
+
+        .about-content {
+            max-width: 1200px;
+            margin: 4rem auto;
+            padding: 0 2rem;
+        }
+
+        .mission-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+            margin-bottom: 4rem;
+            align-items: center;
+        }
+
+        .mission-text h2 {
+            color: var(--primary-light);
+            font-size: 2rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .mission-text p {
+            color: #a0a0a0;
+            margin-bottom: 1.5rem;
+        }
+
+        .mission-image {
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .mission-image img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        .team-section {
+            padding: 4rem 0;
+        }
+
+        .team-section h2 {
+            color: var(--primary-light);
+            font-size: 2rem;
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .team-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .team-member {
+            background-color: var(--surface-color);
+            border-radius: 10px;
+            padding: 2rem;
+            text-align: center;
+            transition: transform 0.3s ease;
+        }
+
+        .team-member:hover {
+            transform: translateY(-5px);
+        }
+
+        .member-avatar {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            margin: 0 auto 1.5rem;
+            overflow: hidden;
+        }
+
+        .member-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .member-info h3 {
+            color: var(--primary-light);
+            margin-bottom: 0.5rem;
+        }
+
+        .member-info p {
+            color: #a0a0a0;
+            font-size: 0.9rem;
+        }
+
+        .timeline {
+            margin: 4rem 0;
+            padding: 2rem;
+            position: relative;
+        }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 50%;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background-color: var(--primary-color);
+            transform: translateX(-50%);
+        }
+
+        .timeline-item {
+            margin-bottom: 3rem;
+            position: relative;
+        }
+
+        .timeline-content {
+            width: calc(50% - 2rem);
+            padding: 1.5rem;
+            background: var(--surface-color);
+            border-radius: 10px;
+            position: relative;
+        }
+
+        .timeline-item:nth-child(odd) .timeline-content {
+            margin-left: auto;
+        }
+
+        .timeline-content::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            width: 20px;
+            height: 20px;
+            background: var(--primary-color);
+            border-radius: 50%;
+        }
+
+        .timeline-item:nth-child(odd) .timeline-content::before {
+            left: -3rem;
+        }
+
+        .timeline-item:nth-child(even) .timeline-content::before {
+            right: -3rem;
+        }
+
+        .timeline-date {
+            color: var(--primary-light);
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+
+        .stats-section {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 2rem;
+            padding: 4rem 0;
+            text-align: center;
+        }
+
+        .stat-item h3 {
+            color: var(--primary-light);
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-item p {
+            color: #a0a0a0;
+        }
+
+        .footer {
+            margin-top: 4rem;
+            background-color: var(--surface-color);
+            padding: 2rem;
+            text-align: center;
+        }
+
+        .footer p {
+            color: #a0a0a0;
+        }
+
+        @media (max-width: 768px) {
+            .mission-section {
+                grid-template-columns: 1fr;
+            }
+
+            .timeline::before {
+                left: 2rem;
+            }
+
+            .timeline-content {
+                width: calc(100% - 4rem);
+                margin-left: 4rem !important;
+            }
+
+            .timeline-content::before {
+                left: -3rem !important;
+            }
+
+            .stats-section {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
 </head>
 <body>
 <nav class="navbar">
@@ -12,11 +302,10 @@
         <a class="logo" href="index.html">TGO</a>
         <div class="nav-links">
             <a href="index.html">Home</a>
-            <a href="features.html">Features</a>
             <a href="docs.html">Documentation</a>
             <a href="gallery.html">Gallery</a>
             <a class="active" href="about.html">About</a>
-            <a href="https://ficsit.app/mod/TajsGraph">Download</a>
+            <a href="#">Download</a>
         </div>
     </div>
 </nav>
@@ -38,7 +327,7 @@
                 range of systems.</p>
         </div>
         <div class="mission-image">
-            <img alt="" src="/api/placeholder/600/400">
+            <img alt="TGO Vision" src="/api/placeholder/600/400">
         </div>
     </section>
 
@@ -47,67 +336,93 @@
         <div class="team-grid">
             <div class="team-member">
                 <div class="member-avatar">
-                    <img alt="Grzegorz Kaczmarski" src="/api/placeholder/120/120">
+                    <img alt="Team Member" src="/api/placeholder/120/120">
                 </div>
                 <div class="member-info">
-                    <h3>TajemnikTV</h3>
-                    <p>Full name: Grzegorz Kaczmarski</p>
-                    <p>Also called: Taj, Gregory</p>
-                    <br>
+                    <h3>Taj Rahman</h3>
                     <p>Founder & Lead Developer</p>
                 </div>
             </div>
+            <div class="team-member">
+                <div class="member-avatar">
+                    <img alt="Team Member" src="/api/placeholder/120/120">
+                </div>
+                <div class="member-info">
+                    <h3>Sarah Chen</h3>
+                    <p>Graphics Engineer</p>
+                </div>
+            </div>
+            <div class="team-member">
+                <div class="member-avatar">
+                    <img alt="Team Member" src="/api/placeholder/120/120">
+                </div>
+                <div class="member-info">
+                    <h3>Marcus Weber</h3>
+                    <p>Performance Optimization</p>
+                </div>
+            </div>
+            <div class="team-member">
+                <div class="member-avatar">
+                    <img alt="Team Member" src="/api/placeholder/120/120">
+                </div>
+                <div class="member-info">
+                    <h3>Elena Popov</h3>
+                    <p>Community Manager</p>
+                </div>
+            </div>
+        </div>
+    </section>
 
-            <section class="timeline">
-                <h2 style="text-align: center; color: var(--primary-light); margin-bottom: 3rem;">Our Journey</h2>
-                <div class="timeline-item">
-                    <div class="timeline-content">
-                        <div class="timeline-date">October 2024</div>
-                        <h3>Project Inception</h3>
-                        <p>TGO begins as a personal project to enhance Satisfactory's lighting system.</p>
-                    </div>
-                </div>
-                <div class="timeline-item">
-                    <div class="timeline-content">
-                        <div class="timeline-date">* 20**</div>
-                        <h3>**** ****</h3>
-                        <p>***** ******</p>
-                    </div>
-                </div>
-                <div class="timeline-item">
-                    <div class="timeline-content">
-                        <div class="timeline-date">* 20**</div>
-                        <h3>****</h3>
-                        <p>****.</p>
-                    </div>
-                </div>
-                <div class="timeline-item">
-                    <div class="timeline-content">
-                        <div class="timeline-date">October 2024</div>
-                        <h3>1.0 Release</h3>
-                        <p>****</p>
-                    </div>
-                </div>
-            </section>
+    <section class="timeline">
+        <h2 style="text-align: center; color: var(--primary-light); margin-bottom: 3rem;">Our Journey</h2>
+        <div class="timeline-item">
+            <div class="timeline-content">
+                <div class="timeline-date">March 2023</div>
+                <h3>Project Inception</h3>
+                <p>TGO begins as a personal project to enhance Satisfactory's lighting system.</p>
+            </div>
+        </div>
+        <div class="timeline-item">
+            <div class="timeline-content">
+                <div class="timeline-date">June 2023</div>
+                <h3>First Beta Release</h3>
+                <p>Early access version released to the community for testing and feedback.</p>
+            </div>
+        </div>
+        <div class="timeline-item">
+            <div class="timeline-content">
+                <div class="timeline-date">September 2023</div>
+                <h3>Team Expansion</h3>
+                <p>Project grows with addition of dedicated graphics and optimization experts.</p>
+            </div>
+        </div>
+        <div class="timeline-item">
+            <div class="timeline-content">
+                <div class="timeline-date">January 2024</div>
+                <h3>1.0 Release</h3>
+                <p>Official release with complete feature set and optimization.</p>
+            </div>
+        </div>
+    </section>
 
-            <section class="stats-section">
-                <div class="stat-item">
-                    <h3>5K+</h3>
-                    <p>Downloads</p>
-                </div>
-                <div class="stat-item">
-                    <h3>*.*</h3>
-                    <p>User Rating</p>
-                </div>
-                <div class="stat-item">
-                    <h3>5+</h3>
-                    <p>Features</p>
-                </div>
-                <div class="stat-item">
-                    <h3>LTS</h3>
-                    <p>Support</p>
-                </div>
-            </section>
+    <section class="stats-section">
+        <div class="stat-item">
+            <h3>100K+</h3>
+            <p>Downloads</p>
+        </div>
+        <div class="stat-item">
+            <h3>4.8</h3>
+            <p>User Rating</p>
+        </div>
+        <div class="stat-item">
+            <h3>50+</h3>
+            <p>Features</p>
+        </div>
+        <div class="stat-item">
+            <h3>24/7</h3>
+            <p>Support</p>
+        </div>
+    </section>
 </main>
 
 <footer class="footer">
