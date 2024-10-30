@@ -8,6 +8,7 @@
     --surface-hover: #2a2a2a;
     --accent-purple-dark: #4a2673;
     --code-bg: #2d2d2d;
+    --accent-color: #9966cc;
 }
 
 /* Reset and Basic Styling */
@@ -63,18 +64,19 @@ body {
     transition: color 0.3s ease;
 }
 
-.nav-links a:hover {
+.nav-links a:hover,
+.nav-links a.active {
     color: var(--primary-light);
 }
 
-/* Hero Section */
+/* Hero Sections */
 .hero {
     height: 100vh;
     display: flex;
     align-items: center;
     justify-content: center;
     text-align: center;
-    position: relative; /* Position relative for pseudo-element overlay */
+    position: relative;
     color: var(--text-color);
     padding: 0 2rem;
     margin-top: 60px;
@@ -82,20 +84,20 @@ body {
             rgba(18, 18, 18, 0.6),
             rgba(18, 18, 18, 0.6)
     ),
-    url('Site/assets/background.jpg') center center/cover no-repeat; /* Replace with the actual path */
+    url('site/assets/background.jpg') center center/cover no-repeat;
 }
 
 .hero-content {
-    position: relative; /* Ensure the content sits above the overlay */
+    position: relative;
     max-width: 800px;
-    z-index: 1; /* Keep content above shadowed background */
+    z-index: 1;
 }
 
 .hero h1 {
     font-size: 3.5rem;
     margin-bottom: 1rem;
     color: var(--text-color);
-    text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.6); /* Extra shadow for depth */
+    text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.6);
 }
 
 .hero p {
@@ -104,104 +106,294 @@ body {
     color: #a0a0a0;
 }
 
-.cta-button {
-    display: inline-block;
-    padding: 1rem 2rem;
+/* Features Pages Styling */
+.features-hero {
+    margin-top: 80px;
+    padding: 6rem 2rem;
+    text-align: center;
+    background-color: var(--surface-color);
+    position: relative;
+    overflow: hidden;
+}
+
+.features-hero h1 {
+    font-size: 3.5rem;
+    color: var(--primary-light);
+    margin-bottom: 1.5rem;
+    position: relative;
+    z-index: 1;
+}
+
+.features-hero p {
+    color: #a0a0a0;
+    max-width: 800px;
+    margin: 0 auto;
+    font-size: 1.2rem;
+    position: relative;
+    z-index: 1;
+}
+
+.feature-categories {
+    display: flex;
+    justify-content: center;
+    gap: 1.5rem;
+    padding: 2rem;
+    flex-wrap: wrap;
+    margin-top: 2rem;
+}
+
+.category-button {
+    padding: 0.75rem 1.5rem;
+    background-color: var(--surface-hover);
+    border: none;
+    color: var(--text-color);
+    border-radius: 25px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 1rem;
+}
+
+.category-button:hover,
+.category-button.active {
     background-color: var(--primary-color);
     color: white;
-    text-decoration: none;
-    border-radius: 5px;
-    font-weight: 500;
-    transition: all 0.3s ease;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-}
-
-.cta-button:hover {
-    background-color: var(--primary-light);
     transform: translateY(-2px);
-    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
 }
 
-
-/* Features Section */
-.features {
-    padding: 6rem 2rem;
-    background-color: var(--surface-color);
-}
-
-.features-content {
+/* Features Grid */
+.features-grid {
     max-width: 1200px;
-    margin: 0 auto;
+    margin: 4rem auto;
+    padding: 0 2rem;
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
     gap: 2rem;
 }
 
 .feature-card {
-    background: var(--bg-color);
+    background-color: var(--surface-color);
+    border-radius: 15px;
     padding: 2rem;
-    border-radius: 10px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
-    transition: all 0.3s ease;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    position: relative;
+    overflow: hidden;
 }
 
 .feature-card:hover {
     transform: translateY(-5px);
-    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
-    background: var(--surface-hover);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+
+.feature-icon {
+    width: 60px;
+    height: 60px;
+    background-color: var(--accent-color);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1.5rem;
 }
 
 .feature-card h3 {
     color: var(--primary-light);
-    margin-bottom: 1rem;
     font-size: 1.5rem;
+    margin-bottom: 1rem;
 }
 
 .feature-card p {
     color: #a0a0a0;
+    margin-bottom: 1.5rem;
 }
 
-/* Sidebar (Docs Page) */
+/* Gallery Styling */
+.gallery-header {
+    margin-top: 80px;
+    padding: 4rem 2rem;
+    text-align: center;
+    background-color: var(--surface-color);
+}
+
+.gallery-header h1 {
+    font-size: 2.5rem;
+    color: var(--primary-light);
+    margin-bottom: 1rem;
+}
+
+.gallery-header p {
+    color: #a0a0a0;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.gallery-filters {
+    padding: 2rem;
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.gallery-grid {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 2rem;
+}
+
+.gallery-item {
+    position: relative;
+    border-radius: 10px;
+    overflow: hidden;
+    aspect-ratio: 16/9;
+    background-color: var(--surface-color);
+    transition: transform 0.3s ease;
+}
+
+.gallery-item:hover {
+    transform: translateY(-5px);
+}
+
+.gallery-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.item-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 1rem;
+    background: linear-gradient(transparent, rgba(0, 0, 0, 0.8));
+    color: white;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.gallery-item:hover .item-overlay {
+    opacity: 1;
+}
+
+/* About Page Styling */
+.about-header {
+    margin-top: 80px;
+    padding: 6rem 2rem;
+    text-align: center;
+    background-color: var(--surface-color);
+    position: relative;
+    overflow: hidden;
+}
+
+.about-header h1 {
+    font-size: 3rem;
+    color: var(--primary-light);
+    margin-bottom: 1.5rem;
+    position: relative;
+    z-index: 1;
+}
+
+.about-content {
+    max-width: 1200px;
+    margin: 4rem auto;
+    padding: 0 2rem;
+}
+
+.mission-section {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4rem;
+    margin-bottom: 4rem;
+    align-items: center;
+}
+
+/* Team Section */
+.team-section {
+    padding: 4rem 0;
+}
+
+.team-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 2rem;
+    margin-top: 2rem;
+}
+
+.team-member {
+    background-color: var(--surface-color);
+    border-radius: 10px;
+    padding: 2rem;
+    text-align: center;
+    transition: transform 0.3s ease;
+}
+
+.team-member:hover {
+    transform: translateY(-5px);
+}
+
+.member-avatar {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    margin: 0 auto 1.5rem;
+    overflow: hidden;
+}
+
+.member-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Timeline Section */
+.timeline {
+    margin: 4rem 0;
+    padding: 2rem;
+    position: relative;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background-color: var(--primary-color);
+    transform: translateX(-50%);
+}
+
+.timeline-item {
+    margin-bottom: 3rem;
+    position: relative;
+}
+
+.timeline-content {
+    width: calc(50% - 2rem);
+    padding: 1.5rem;
+    background: var(--surface-color);
+    border-radius: 10px;
+    position: relative;
+}
+
+.timeline-item:nth-child(odd) .timeline-content {
+    margin-left: auto;
+}
+
+/* Documentation Styling */
+/
 .sidebar {
     width: 300px;
     background-color: var(--surface-color);
-    padding: 2rem;
     position: fixed;
     height: 100vh;
     overflow-y: auto;
-    padding-top: 5rem;
+    padding: 5rem 2rem 2rem;
 }
 
-.sidebar-nav {
-    list-style: none;
-}
-
-.sidebar-nav li {
-    margin-bottom: 0.5rem;
-}
-
-.sidebar-nav a {
-    color: var(--text-color);
-    text-decoration: none;
-    display: block;
-    padding: 0.5rem;
-    border-radius: 4px;
-    transition: all 0.3s ease;
-}
-
-.sidebar-nav a:hover {
-    background-color: var(--surface-hover);
-    color: var(--primary-light);
-}
-
-.sidebar-nav .section-title {
-    color: var(--primary-light);
-    font-weight: bold;
-    margin-top: 1.5rem;
-    margin-bottom: 0.5rem;
-}
-
-/* Main Content Area for Docs */
 .main-content {
     margin-left: 300px;
     padding: 5rem 2rem 2rem;
@@ -211,29 +403,6 @@ body {
 
 .doc-section {
     margin-bottom: 3rem;
-}
-
-.doc-section h1, .doc-section h2, .doc-section h3 {
-    color: var(--primary-light);
-}
-
-.doc-section h1 {
-    font-size: 2.5rem;
-    margin-bottom: 1.5rem;
-}
-
-.doc-section h2 {
-    font-size: 1.8rem;
-    margin: 2rem 0 1rem;
-}
-
-.doc-section h3 {
-    font-size: 1.4rem;
-    margin: 1.5rem 0 1rem;
-}
-
-.doc-section p, .doc-section ul, .doc-section ol, .doc-section li {
-    color: #a0a0a0;
 }
 
 .info-box, .warning-box {
@@ -251,6 +420,7 @@ body {
     border-left: 4px solid #e6b800;
 }
 
+/* Code Styling */
 code {
     background-color: var(--code-bg);
     padding: 0.2rem 0.4rem;
@@ -282,24 +452,31 @@ pre {
     gap: 3rem;
 }
 
-.footer-section h4 {
-    color: var(--primary-light);
-    font-size: 1.2rem;
-}
-
-.footer-section ul {
-    list-style: none;
-}
-
-.footer-section a {
-    color: #a0a0a0;
+/* CTA Buttons */
+.cta-button {
+    display: inline-block;
+    padding: 1rem 2rem;
+    background-color: var(--primary-color);
+    color: white;
     text-decoration: none;
+    border-radius: 5px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
 }
 
-.footer-section a:hover {
-    color: var(--primary-light);
+.cta-button:hover {
+    background-color: var(--primary-light);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
 }
 
+.cta-secondary {
+    background-color: var(--surface-hover);
+    color: var(--text-color);
+}
+
+/* Responsive Design */
 @media (max-width: 768px) {
     .hero h1 {
         font-size: 2.5rem;
@@ -311,5 +488,30 @@ pre {
 
     .main-content {
         margin-left: 0;
+    }
+
+    .mission-section {
+        grid-template-columns: 1fr;
+    }
+
+    .timeline::before {
+        left: 2rem;
+    }
+
+    .timeline-content {
+        width: calc(100% - 4rem);
+        margin-left: 4rem !important;
+    }
+
+    .comparison-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .gallery-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .features-hero h1 {
+        font-size: 2.5rem;
     }
 }
