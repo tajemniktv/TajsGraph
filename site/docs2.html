@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <title>TGO Documentation</title>
+    <!-- Import Tailwind -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet"/>
+    <script>
+        // Smooth scroll behavior
+        document.addEventListener('DOMContentLoaded', () => {
+            // Progress bar
+            const progressBar = document.querySelector('.progress-bar');
+            window.addEventListener('scroll', () => {
+                const winScroll = document.body.scrollTop || document.documentElement.scrollTop;
+                const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+                const scrolled = (winScroll / height) * 100;
+                progressBar.style.width = scrolled + '%';
+            });
+
+            // Scroll to top button
+            const scrollToTopBtn = document.querySelector('.scroll-to-top');
+            window.addEventListener('scroll', () => {
+                if (window.pageYOffset > 100) {
+                    scrollToTopBtn.classList.remove('hidden');
+                } else {
+                    scrollToTopBtn.classList.add('hidden');
+                }
+            });
+
+            scrollToTopBtn.addEventListener('click', () => {
+                window.scrollTo({
+                    top: 0,
+                    behavior: 'smooth'
+                });
+            });
+
+            // Active section highlighting
+            const observerOptions = {
+                root: null,
+                rootMargin: '0px',
+                threshold: 0.5
+            };
+
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const id = entry.target.getAttribute('id');
+                        document.querySelectorAll('.nav-link').forEach(link => {
+                            link.classList.remove('active');
+                            if (link.getAttribute('href') === '#' + id) {
+                                link.classList.add('active');
+                            }
+                        });
+                    }
+                });
+            }, observerOptions);
+
+            document.querySelectorAll('.doc-section').forEach((section) => {
+                observer.observe(section);
+            });
+
+            // Mobile menu toggle
+            const menuButton = document.querySelector('.mobile-menu-button');
+            const sidebar = document.querySelector('.sidebar');
+
+            menuButton.addEventListener('click', () => {
+                sidebar.classList.toggle('hidden');
+            });
+        });
+    </script>
+    <style>
+        /* Custom CSS */
+        :root {
+            --primary: #1a73e8;
+            --primary-dark: #1557b0;
+            --background: #ffffff;
+            --text: #213547;
+            --sidebar-bg: #f8f9fa;
+            --code-bg: #282c34;
+        }
+
+        /* Dark mode variables */
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --background: #1a1a1a;
+                --text: #ffffff;
+                --sidebar-bg: #242424;
+                --code-bg: #1a1a1a;
+            }
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            color: var(--text);
+            background: var(--background);
+            margin: 0;
+            padding: 0;
+            line-height: 1.6;
+        }
+
+        .progress-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 3px;
+            background: var(--primary);
+            z-index: 1000;
+            transition: width 0.2s ease-out;
+        }
+
+        .sidebar {
+            width: 280px;
+            height: 100vh;
+            position: fixed;
+            background: var(--sidebar-bg);
+            padding: 2rem;
+            overflow-y: auto;
+        }
+
+        .main-content {
+            margin-left: 280px;
+            padding: 2rem;
+            max-width: 900px;
+        }
+
+        .nav-link {
+            display: block;
+            padding: 0.5rem 0;
+            color: var(--text);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .nav-link:hover {
+            color: var(--primary);
+        }
+
+        .nav-link.active {
+            color: var(--primary);
+            font-weight: 600;
+        }
+
+        .scroll-to-top {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background: var(--primary);
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: opacity 0.3s;
+            z-index: 1000;
+        }
+
+        .info-box, .warning-box {
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 4px;
+        }
+
+        .info-box {
+            background: rgba(26, 115, 232, 0.1);
+            border-left: 4px solid var(--primary);
+        }
+
+        .warning-box {
+            background: rgba(255, 171, 0, 0.1);
+            border-left: 4px solid #ffab00;
+        }
+
+        /* Mobile styles */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+            }
+
+            .sidebar.active {
+                transform: translateX(0);
+            }
+
+            .main-content {
+                margin-left: 0;
+                padding: 1rem;
+            }
+
+            .mobile-menu-button {
+                display: block;
+                position: fixed;
+                top: 1rem;
+                left: 1rem;
+                z-index: 1001;
+            }
+        }
+
+        /* Code blocks */
+        pre[class*="language-"] {
+            background: var(--code-bg);
+            border-radius: 4px;
+            margin: 1.5rem 0;
+        }
+
+        code[class*="language-"] {
+            font-family: 'Fira Code', monospace;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+<!-- Progress bar -->
+<div class="progress-bar"></div>
+
+<!-- Mobile menu button -->
+<button class="mobile-menu-button md:hidden">
+    <svg fill="none" height="24" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+         viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg">
+        <line x1="3" x2="21" y1="12" y2="12"></line>
+        <line x1="3" x2="21" y1="6" y2="6"></line>
+        <line x1="3" x2="21" y1="18" y2="18"></line>
+    </svg>
+</button>
+
+<!-- Sidebar -->
+<nav class="sidebar">
+    <div class="logo">
+        <a class="text-2xl font-bold" href="index.html">TGO</a>
+    </div>
+
+    <div class="mt-8">
+        <h3 class="text-sm font-semibold mb-2">Getting Started</h3>
+        <a class="nav-link" href="#introduction">Introduction</a>
+        <a class="nav-link" href="#requirements">System Requirements</a>
+        <a class="nav-link" href="#installation">Installation Guide</a>
+    </div>
+
+    <div class="mt-6">
+        <h3 class="text-sm font-semibold mb-2">Features</h3>
+        <a class="nav-link" href="#lighting">Enhanced Lighting</a>
+        <a class="nav-link" href="#effects">Visual Effects</a>
+        <a class="nav-link" href="#performance">Performance Settings</a>
+    </div>
+
+    <div class="mt-6">
+        <h3 class="text-sm font-semibold mb-2">Configuration</h3>
+        <a class="nav-link" href="#config">Config File</a>
+        <a class="nav-link" href="#presets">Preset Profiles</a>
+        <a class="nav-link" href="#custom">Custom Settings</a>
+    </div>
+
+    <div class="mt-6">
+        <h3 class="text-sm font-semibold mb-2">Help</h3>
+        <a class="nav-link" href="#faq">FAQ</a>
+        <a class="nav-link" href="#known-issues">Known Issues</a>
+        <a class="nav-link" href="#support">Getting Support</a>
+    </div>
+</nav>
+
+<!-- Main content -->
+<main class="main-content">
+    <section class="doc-section" id="introduction">
+        <h1 class="text-4xl font-bold mb-6">Documentation</h1>
+        <p class="text-lg mb-4">Welcome to the documentation for Taj's Graphical Overhaul (TGO). This comprehensive
+            guide will help you install, configure, and get the most out of the visual enhancements provided by the
+            mod.</p>
+
+        <div class="info-box">
+            <p>This documentation assumes you're familiar with installing mods for Satisfactory using the Satisfactory
+                Mod Manager (SMM).</p>
+        </div>
+    </section>
+
+    <section class="doc-section mt-12" id="requirements">
+        <h2 class="text-3xl font-bold mb-4">System Requirements</h2>
+        <p class="mb-4">Before installing TGO, ensure your system meets the following requirements:</p>
+
+        <table class="w-full mb-6">
+            <thead>
+            <tr>
+                <th class="text-left py-2">Component</th>
+                <th class="text-left py-2">Minimum</th>
+                <th class="text-left py-2">Recommended</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr>
+                <td class="py-2">GPU</td>
+                <td class="py-2">GTX 1060 6GB</td>
+                <td class="py-2">RTX 2060 or better</td>
+            </tr>
+            <tr>
+                <td class="py-2">VRAM</td>
+                <td class="py-2">6GB</td>
+                <td class="py-2">8GB+</td>
+            </tr>
+            <tr>
+                <td class="py-2">CPU</td>
+                <td class="py-2">i5-6600 / Ryzen 5 1600</td>
+                <td class="py-2">i7-8700 / Ryzen 7 2700X</td>
+            </tr>
+            <tr>
+                <td class="py-2">RAM</td>
+                <td class="py-2">16GB</td>
+                <td class="py-2">32GB</td>
+            </tr>
+            </tbody>
+        </table>
+
+        <div class="warning-box">
+            <p>Performance may vary depending on your factory size and complexity. These requirements assume a
+                medium-sized factory.</p>
+        </div>
+    </section>
+
+    <section class="doc-section mt-12" id="installation">
+        <h2 class="text-3xl font-bold mb-4">Installation Guide</h2>
+
+        <h3 class="text-2xl font-semibold mb-3">Using Satisfactory Mod Manager</h3>
+        <ol class="list-decimal ml-6 mb-6">
+            <li class="mb-2">Open Satisfactory Mod Manager</li>
+            <li class="mb-2">Search for "Taj's Graphical Overhaul"</li>
+            <li class="mb-2">Click the download button</li>
+            <li class="mb-2">Wait for installation to complete</li>
+            <li class="mb-2">Launch the game</li>
+        </ol>
+
+        <h3 class="text-2xl font-semibold mb-3">Manual Installation</h3>
+        <p class="mb-4">Manual installation is not recommended but can be done by following these steps:</p>
+
+        <pre><code class="language-bash">1. Download the mod from ficsit.app
+2. Extract the contents to [Game Directory]/FactoryGame/Mods/
+3. Ensure the folder is named exactly "TajGraphicalOverhaul"</code></pre>
+    </section>
+
+    <section class="doc-section mt-12" id="lighting">
+        <h2 class="text-3xl font-bold mb-4">Enhanced Lighting</h2>
+        <p class="mb-4">TGO implements several improvements to Satisfactory's lighting system:</p>
+
+        <h3 class="text-2xl font-semibold mb-3">Global Illumination</h3>
+        <p class="mb-4">Enhanced bounce lighting creates more realistic indoor and outdoor environments. This
+            affects:</p>
+        <ul class="list-disc ml-6 mb-6">
+            <li>Interior factory spaces</li>
+            <li>Underground areas</li>
+            <li>Shaded outdoor areas</li>
+        </ul>
+    </section>
+
+    <section class="doc-section mt-12" id="faq">
+        <h2 class="text-3xl font-bold mb-4">Frequently Asked Questions</h2>
+
+        <div class="mb-6">
+            <h3 class="text-xl font-semibold mb-2">Will this mod impact my game performance?</h3>
+            <p>TGO is designed to be as performance-friendly as possible, but some impact is expected. Use the
+                configuration options to find the right balance for your system.</p>
+        </div>
+
+        <div class="mb-6">
+            <h3 class="text-xl font-semibold mb-2">Is this mod compatible with other visual mods?</h3>
+            <p>TGO is generally compatible with other mods, but other visual enhancement mods might conflict. Check the
+                compatibility section for details.</p>
+        </div>
+
+        <div class="mb-6">
+            <h3 class="text-xl font-semibold mb-2">Can I use this mod in multiplayer?</h3>
+            <p>Yes! TGO is client-side only and can be used in multiplayer without requiring other players to have it
+                installed.</p>
+        </div>
+    </section>
+
+    <section class="doc-section mt-12" id="performance">
+        <h2 class="text-3xl font-bold mb-4">Performance Settings</h2>
+        <p class="mb-4">TGO includes several performance presets and customization options:</p>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <div class="p-6 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                <h3 class="text-xl font-semibold mb-3">Performance Preset</h3>
+                <p>Optimized for maximum FPS while maintaining essential visual improvements.</p>
+                <pre><code class="language-json">{
+  "shadowQuality": "medium",
+  "reflections": "low",
+  "volumetrics": "disabled"
+}</code></pre>
+            </div>
+
+            <div class="p-6 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                <h3 class="text-xl font-semibold mb-3">Quality Preset</h3>
+                <p>Maximum visual fidelity for high-end systems.</p>
+                <pre><code class="language-json">{
+  "shadowQuality": "ultra",
+  "reflections": "high",
+  "volumetrics": "enabled"
+}</code></pre>
+            </div>
+        </div>
+    </section>
+
+    <section class="doc-section mt-12" id="config">
+        <h2 class="text-3xl font-bold mb-4">Configuration File</h2>
+        <p class="mb-4">The main configuration file can be found at:</p>
+        <pre><code class="language-bash">[Game Directory]/FactoryGame/Mods/TajGraphicalOverhaul/config.json</code></pre>
+
+        <div class="info-box mt-4">
+            <p>Remember to back up your configuration file before making changes!</p>
+        </div>
+    </section>
+</main>
+
+<!-- Scroll to top button -->
+<button class="scroll-to-top hidden">
+    <svg fill="none" height="24" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+         viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg">
+        <polyline points="18 15 12 9 6 15"></polyline>
+    </svg>
+</button>
+
+<!-- Additional JavaScript for dark mode toggle -->
+<script>
+    // Dark mode toggle functionality
+    let darkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const toggleDarkMode = () => {
+        darkMode = !darkMode;
+        document.documentElement.classList.toggle('dark', darkMode);
+    };
+
+    // Additional Intersection Observer setup for animations
+    const fadeInOptions = {
+        threshold: 0.1,
+        rootMargin: '0px 0px -50px 0px'
+    };
+
+    const fadeInObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('fade-in');
+                fadeInObserver.unobserve(entry.target);
+            }
+        });
+    }, fadeInOptions);
+
+    document.querySelectorAll('.doc-section').forEach(section => {
+        fadeInObserver.observe(section);
+    });
+
+    // Add smooth scrolling to all anchor links
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function (e) {
+            e.preventDefault();
+            const target = document.querySelector(this.getAttribute('href'));
+            if (target) {
+                target.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+            }
+        });
+    });
+
+    // Enhanced mobile menu handling
+    const closeMenuOnResize = () => {
+        if (window.innerWidth > 768) {
+            document.querySelector('.sidebar').classList.remove('hidden');
+        }
+    };
+    window.addEventListener('resize', closeMenuOnResize);
+</script>
+
+<!-- Add Prism.js language support -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+</body>
+</html>
