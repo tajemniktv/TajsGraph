@@ -9,25 +9,51 @@
     <style>
         /* Custom CSS */
         :root {
-            --primary: #1a73e8;
-            --primary-light: #4285f4;
-            --primary-dark: #1557b0;
-            --accent: #00c853;
+            --primary: #663399;
+            --primary-light: #8855cc;
+            --primary-dark: #4a2673;
+            --accent: #6366f1;
             --background: #ffffff;
-            --text: #213547;
-            --sidebar-bg: #f8f9fa;
-            --code-bg: #282c34;
+            --text-color: #e1e1e1;
+            --text-light: #6b7280;
+            --sidebar-bg: #f9fafb;
+            --surface-color: #1e1e1e;
+            --surface-hover: #2a2a2a;
+            --bg-color: #121212;
             --border: #e5e7eb;
+            --card-bg: #ffffff;
+            --sidebar-bg: #1e1e1e;
+            --background: #121212;
+            --text: #e1e1e1;
+            --sidebar-bg: #1e1e1e;
+            --code-bg: #2d2d2d;
+            --border: #2a2a2a;
+            --card-bg: #1e1e1e;
         }
 
         /* Dark mode variables */
         @media (prefers-color-scheme: dark) {
             :root {
-                --background: #1a1a1a;
-                --text: #ffffff;
-                --sidebar-bg: #242424;
-                --code-bg: #1a1a1a;
-                --border: #404040;
+                --primary: #663399;
+                --primary-light: #8855cc;
+                --primary-dark: #4a2673;
+                --accent: #6366f1;
+                --background: #ffffff;
+                --text-color: #e1e1e1;
+                --text-light: #6b7280;
+                --sidebar-bg: #f9fafb;
+                --surface-color: #1e1e1e;
+                --surface-hover: #2a2a2a;
+                --bg-color: #121212;
+                --border: #e5e7eb;
+                --card-bg: #ffffff;
+                --sidebar-bg: #1e1e1e;
+                --background: #121212;
+                --text: #e1e1e1;
+                --sidebar-bg: #1e1e1e;
+                --code-bg: #2d2d2d;
+                --border: #2a2a2a;
+                --card-bg: #1e1e1e;
             }
         }
 
@@ -55,7 +81,7 @@
             top: 0;
             left: 0;
             height: 3px;
-            background: var(--accent);
+            background: linear-gradient(90deg, var(--primary) 0%, var(--accent) 100%);
             z-index: 1000;
             transition: width 0.2s ease-out;
         }
@@ -81,6 +107,9 @@
             font-size: 1.5rem;
             font-weight: bold;
             margin-bottom: 2rem;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
 
         .nav-section {
@@ -91,29 +120,30 @@
             font-size: 0.875rem;
             font-weight: 600;
             text-transform: uppercase;
-            color: var(--text);
-            opacity: 0.7;
+            color: var(--text-light);
             margin-bottom: 0.75rem;
+            letter-spacing: 0.05em;
         }
 
         .nav-link {
             display: block;
-            padding: 0.5rem 0;
+            padding: 0.5rem 0.75rem;
             color: var(--text);
             text-decoration: none;
             transition: all 0.2s;
-            border-radius: 4px;
-            padding-left: 0.5rem;
+            border-radius: 6px;
+            margin-bottom: 0.25rem;
+            font-size: 0.95rem;
         }
 
         .nav-link:hover {
             color: var(--primary);
-            background: rgba(26, 115, 232, 0.1);
+            background: color-mix(in srgb, var(--primary) 10%, transparent);
         }
 
         .nav-link.active {
             color: var(--primary);
-            background: rgba(26, 115, 232, 0.1);
+            background: color-mix(in srgb, var(--primary) 15%, transparent);
             font-weight: 500;
         }
 
@@ -137,9 +167,10 @@
             color: white;
             width: 40px;
             height: 40px;
-            border-radius: 4px;
+            border-radius: 8px;
             cursor: pointer;
             padding: 0.5rem;
+            box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3);
         }
 
         /* Scroll to top button */
@@ -147,7 +178,7 @@
             position: fixed;
             bottom: 2rem;
             right: 2rem;
-            background: var(--primary);
+            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
             color: white;
             width: 40px;
             height: 40px;
@@ -159,43 +190,123 @@
             transition: all 0.3s;
             z-index: 1000;
             border: none;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
         }
 
         .scroll-to-top:hover {
-            background: var(--primary-dark);
             transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(139, 92, 246, 0.4);
         }
 
         /* Info boxes */
         .info-box, .warning-box {
-            padding: 1rem;
-            margin: 1rem 0;
-            border-radius: 4px;
-            border-left: 4px solid;
+            padding: 1.25rem;
+            margin: 1.5rem 0;
+            border-radius: 8px;
+            border: 1px solid var(--border);
         }
 
         .info-box {
-            background: rgba(26, 115, 232, 0.1);
-            border-left-color: var(--primary);
+            background: color-mix(in srgb, var(--primary) 5%, var(--card-bg));
+            border-left: 4px solid var(--primary);
         }
 
         .warning-box {
-            background: rgba(255, 171, 0, 0.1);
-            border-left-color: #ffab00;
+            background: color-mix(in srgb, #f59e0b 5%, var(--card-bg));
+            border-left: 4px solid #f59e0b;
         }
 
         /* Code blocks */
         pre[class*="language-"] {
             background: var(--code-bg) !important;
-            border-radius: 4px;
+            border-radius: 8px;
             margin: 1.5rem 0;
-            padding: 1rem !important;
+            padding: 1.25rem !important;
+            border: 1px solid var(--border);
         }
 
         code[class*="language-"] {
             font-family: 'Fira Code', monospace;
             font-size: 0.9em;
+        }
+
+        /* Cards */
+        .card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 1.5rem;
+            border: 1px solid var(--border);
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Typography */
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        h2 {
+            font-size: 1.875rem;
+            font-weight: 600;
+            margin: 2.5rem 0 1.5rem;
+            color: var(--text);
+        }
+
+        h3 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin: 2rem 0 1rem;
+            color: var(--text);
+        }
+
+        p {
+            color: var(--text-light);
+            margin-bottom: 1.25rem;
+            font-size: 1.05rem;
+        }
+
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1.5rem 0;
+        }
+
+        th, td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        th {
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        td {
+            color: var(--text-light);
+        }
+
+        /* Grid */
+        .grid {
+            display: grid;
+            gap: 1.5rem;
+            margin: 1.5rem 0;
+        }
+
+        @media (min-width: 768px) {
+            .grid-cols-2 {
+                grid-template-columns: repeat(2, 1fr);
+            }
         }
 
         /* Mobile styles */
@@ -229,6 +340,7 @@
                 right: 0;
                 bottom: 0;
                 background: rgba(0, 0, 0, 0.5);
+                backdrop-filter: blur(4px);
                 z-index: 999;
             }
 
@@ -253,33 +365,32 @@
             }
         }
 
-        /* Grid layout for presets */
-        .grid {
-            display: grid;
-            gap: 1.5rem;
+        .card a {
+            color: var(--primary-light);
+            text-decoration: none;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.375rem 0;
         }
 
-        @media (min-width: 768px) {
-            .grid-cols-2 {
-                grid-template-columns: repeat(2, 1fr);
-            }
+        .card a:hover {
+            color: var(--accent);
+            transform: translateX(4px);
         }
 
-        .card {
-            background: var(--sidebar-bg);
-            border-radius: 8px;
-            padding: 1.5rem;
-            border: 1px solid var(--border);
+        .card a:visited {
+            color: var(--primary-light);
         }
 
-        h1, h2, h3, h4, h5, h6 {
-            color: var(--text);
-            line-height: 1.2;
-            margin-bottom: 1rem;
+        .card ul {
+            list-style: none;
+            padding: 0;
         }
 
-        p {
-            margin-bottom: 1rem;
+        .card li {
+            margin-bottom: 0.5rem;
         }
     </style>
 </head>
@@ -337,95 +448,207 @@
 
 <!-- Main content -->
 <main class="main-content">
-    <section class="doc-section" id="introduction">
+    <!-- Introduction Section -->
+    <section class="doc-section mb-12" id="introduction">
         <h1>Documentation</h1>
-        <p>Welcome to the documentation for Taj's Graphical Overhaul (TGO). This comprehensive guide will help you
-            install, configure, and get the most out of the visual enhancements provided by the mod.</p>
+        <p class="text-lg mb-8">Welcome to the documentation for Taj's Graphical Overhaul (TGO). This comprehensive
+            guide will help you install, configure, and get the most out of the visual enhancements provided by the
+            mod.</p>
 
-        <div class="info-box">
+        <div class="info-box mb-8">
             <p>This documentation assumes you're familiar with installing mods for Satisfactory using the Satisfactory
                 Mod Manager (SMM).</p>
         </div>
+
+        <div class="grid grid-cols-2 gap-6">
+            <div class="card">
+                <h3 class="text-xl font-semibold mb-4">What's New in 1.2.0</h3>
+                <ul class="space-y-2">
+                    <li class="flex items-center gap-2">
+                        <svg class="text-primary" fill="none" height="16" stroke="currentColor" stroke-linecap="round"
+                             stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="16"
+                             xmlns="http://www.w3.org/2000/svg">
+                            <polyline points="20 6 9 17 4 12"></polyline>
+                        </svg>
+                        Enhanced ray-traced reflections
+                    </li>
+                    <li class="flex items-center gap-2">
+                        <svg class="text-primary" fill="none" height="16" stroke="currentColor" stroke-linecap="round"
+                             stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="16"
+                             xmlns="http://www.w3.org/2000/svg">
+                            <polyline points="20 6 9 17 4 12"></polyline>
+                        </svg>
+                        Improved DLSS support
+                    </li>
+                    <li class="flex items-center gap-2">
+                        <svg class="text-primary" fill="none" height="16" stroke="currentColor" stroke-linecap="round"
+                             stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="16"
+                             xmlns="http://www.w3.org/2000/svg">
+                            <polyline points="20 6 9 17 4 12"></polyline>
+                        </svg>
+                        New performance presets
+                    </li>
+                </ul>
+            </div>
+
+            <div class="card">
+                <h3 class="text-xl font-semibold mb-4">Quick Links</h3>
+                <ul class="space-y-2">
+                    <li>
+                        <a class="flex items-center gap-2 text-primary-light hover:text-accent transition-all hover:translate-x-1"
+                           href="#quick-start">
+                            <svg fill="none" height="16" stroke="currentColor" stroke-linecap="round"
+                                 stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="16"
+                                 xmlns="http://www.w3.org/2000/svg">
+                                <path d="M5 12h14"></path>
+                                <path d="m12 5 7 7-7 7"></path>
+                            </svg>
+                            Quick Start Guide
+                        </a>
+                    </li>
+                    <li>
+                        <a class="flex items-center gap-2 text-primary-light hover:text-accent transition-all hover:translate-x-1"
+                           href="#performance">
+                            <svg fill="none" height="16" stroke="currentColor" stroke-linecap="round"
+                                 stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="16"
+                                 xmlns="http://www.w3.org/2000/svg">
+                                <path d="M5 12h14"></path>
+                                <path d="m12 5 7 7-7 7"></path>
+                            </svg>
+                            Performance Guide
+                        </a>
+                    </li>
+                    <li>
+                        <a class="flex items-center gap-2 text-primary-light hover:text-accent transition-all hover:translate-x-1"
+                           href="#faq">
+                            <svg fill="none" height="16" stroke="currentColor" stroke-linecap="round"
+                                 stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="16"
+                                 xmlns="http://www.w3.org/2000/svg">
+                                <path d="M5 12h14"></path>
+                                <path d="m12 5 7 7-7 7"></path>
+                            </svg>
+                            FAQ & Troubleshooting
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
     </section>
 
-    <section class="doc-section" id="requirements">
-        <h2>System Requirements</h2>
-        <p>Before installing TGO, ensure your system meets the following requirements:</p>
+    <!-- Requirements Section -->
+    <section class="doc-section mb-12" id="requirements">
+        <h2 class="text-2xl font-bold mb-6">System Requirements</h2>
+        <p class="mb-6">Before installing TGO, ensure your system meets the following requirements:</p>
 
-        <div class="card">
-            <table style="width: 100%">
+        <div class="bg-gray-900/50 rounded-lg p-6 mb-6 border border-gray-800">
+            <table class="w-full">
                 <thead>
                 <tr>
-                    <th style="text-align: left">Component</th>
-                    <th style="text-align: left">Minimum</th>
-                    <th style="text-align: left">Recommended</th>
+                    <th class="text-left py-2 px-4 border-b border-gray-800">Component</th>
+                    <th class="text-left py-2 px-4 border-b border-gray-800">Minimum</th>
+                    <th class="text-left py-2 px-4 border-b border-gray-800">Recommended</th>
                 </tr>
                 </thead>
                 <tbody>
                 <tr>
-                    <td>GPU</td>
-                    <td>GTX 1060 6GB</td>
-                    <td>RTX 2060 or better</td>
+                    <td class="py-2 px-4">GPU</td>
+                    <td class="py-2 px-4">GTX 1060 6GB</td>
+                    <td class="py-2 px-4">RTX 2060 or better</td>
                 </tr>
                 <tr>
-                    <td>VRAM</td>
-                    <td>6GB</td>
-                    <td>8GB+</td>
+                    <td class="py-2 px-4">VRAM</td>
+                    <td class="py-2 px-4">6GB</td>
+                    <td class="py-2 px-4">8GB+</td>
                 </tr>
                 <tr>
-                    <td>CPU</td>
-                    <td>i5-6600 / Ryzen 5 1600</td>
-                    <td>i7-8700 / Ryzen 7 2700X</td>
-                </tr>
-                <tr>
-                    <td>RAM</td>
-                    <td>16GB</td>
-                    <td>32GB</td>
+                    <td class="py-2 px-4">CPU</td>
+                    <td class="py-2 px-4">i5-6600</td>
+                    <td class="py-2 px-4">i7-8700 or better</td>
                 </tr>
                 </tbody>
             </table>
         </div>
 
         <div class="warning-box">
-            <p>Performance may vary depending on your factory size and complexity. These requirements assume a
-                medium-sized factory.</p>
+            <p>Performance may vary depending on your factory size and complexity.</p>
         </div>
     </section>
 
-    <section class="doc-section" id="performance">
-        <h2>Performance Settings</h2>
-        <p>TGO includes several performance presets and customization options:</p>
+    <!-- Installation Section -->
+    <section class="doc-section mb-12" id="installation">
+        <h2 class="text-2xl font-bold mb-6">Installation Guide</h2>
 
-        <div class="grid grid-cols-2">
-            <div class="card">
-                <h3>Performance Preset</h3>
-                <p>Optimized for maximum FPS while maintaining essential visual improvements.</p>
-                <pre><code class="language-json">{
+        <div class="space-y-8">
+            <div class="bg-gray-900/50 rounded-lg p-6 border border-gray-800">
+                <h3 class="text-xl font-semibold mb-4">Using Mod Manager (Recommended)</h3>
+                <ol class="list-decimal ml-4 space-y-2">
+                    <li>Open Satisfactory Mod Manager</li>
+                    <li>Search for "Taj's Graphical Overhaul"</li>
+                    <li>Click the download button</li>
+                    <li>Wait for installation to complete</li>
+                    <li>Launch the game</li>
+                </ol>
+            </div>
+
+            <div class="bg-gray-900/50 rounded-lg p-6 border border-gray-800">
+                <h3 class="text-xl font-semibold mb-4">Manual Installation</h3>
+                <pre><code class="language-bash">[Game Directory]/FactoryGame/Mods/TajGraphicalOverhaul/</code></pre>
+                <div class="info-box mt-4 mb-0">
+                    <p>Remember to back up your configuration file before making changes!</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Performance Section -->
+    <section class="doc-section mb-12" id="performance">
+        <h2 class="text-2xl font-bold mb-6">Performance Settings</h2>
+        <p class="mb-6">TGO includes several performance presets and customization options:</p>
+
+        <div class="bg-gray-900/50 rounded-lg p-6 border border-gray-800">
+            <div class="grid md:grid-cols-2 gap-6">
+                <div>
+                    <h3 class="text-xl font-semibold mb-4">Performance Preset</h3>
+                    <pre><code class="language-json">{
   "shadowQuality": "medium",
   "reflections": "low",
   "volumetrics": "disabled"
 }</code></pre>
-            </div>
-
-            <div class="card">
-                <h3>Quality Preset</h3>
-                <p>Maximum visual fidelity for high-end systems.</p>
-                <pre><code class="language-json">{
+                </div>
+                <div>
+                    <h3 class="text-xl font-semibold mb-4">Quality Preset</h3>
+                    <pre><code class="language-json">{
   "shadowQuality": "ultra",
   "reflections": "high",
   "volumetrics": "enabled"
 }</code></pre>
+                </div>
             </div>
         </div>
     </section>
 
-    <section class="doc-section" id="config">
-        <h2>Configuration File</h2>
-        <p>The main configuration file can be found at:</p>
-        <pre><code class="language-bash">[Game Directory]/FactoryGame/Mods/TajGraphicalOverhaul/config.json</code></pre>
+    <!-- FAQ Section -->
+    <section class="doc-section mb-12" id="faq">
+        <h2 class="text-2xl font-bold mb-6">Frequently Asked Questions</h2>
 
-        <div class="info-box">
-            <p>Remember to back up your configuration file before making changes!</p>
+        <div class="space-y-6">
+            <div class="bg-gray-900/50 rounded-lg p-6 border border-gray-800">
+                <h3 class="text-xl font-semibold mb-3">Will this mod impact my game performance?</h3>
+                <p>TGO is designed to be as performance-friendly as possible, but some impact is expected. Use the
+                    configuration options to find the right balance for your system.</p>
+            </div>
+
+            <div class="bg-gray-900/50 rounded-lg p-6 border border-gray-800">
+                <h3 class="text-xl font-semibold mb-3">Is this mod compatible with other visual mods?</h3>
+                <p>TGO is generally compatible with other mods, but other visual enhancement mods might conflict. Check
+                    the compatibility section for details.</p>
+            </div>
+
+            <div class="bg-gray-900/50 rounded-lg p-6 border border-gray-800">
+                <h3 class="text-xl font-semibold mb-3">Can I use this mod in multiplayer?</h3>
+                <p>Yes! TGO is client-side only and can be used in multiplayer without requiring other players to have
+                    it installed.</p>
+            </div>
         </div>
     </section>
 </main>
