@@ -1,13 +1,13 @@
 {
 	"FileVersion": 3,
 	"Version": 1,
-  "VersionName": "1.1.0",
+  "VersionName": "1.5.1",
 	"FriendlyName": "Taj's Graphical Overhaul",
 	"Description": "Get ready to see every pipe and every constructor in eye-popping detail. Crank up those graphics and make efficiency look sexy!",
 	"Category": "Modding",
 	"CreatedBy": "TajemnikTV",
 	"CreatedByURL": "https://github.com/tajemniktv",
-	"DocsURL": "https://github.com/tajemniktv/TajsGraph/wiki",
+  "DocsURL": "https://tajemniktv.github.io/TajsGraph/",
 	"MarketplaceURL": "",
 	"SupportURL": "https://github.com/tajemniktv/TajsGraph/issues",
 	"CanContainContent": true,
@@ -21,7 +21,7 @@
 			"SemVersion": "^3.8.0"
 		}
 	],
-  "SemVersion": "1.1.0",
+  "SemVersion": "1.5.1",
   "GameVersion": ">=365306",
   "RequiredOnRemote": false
 }
