@@ -15,7 +15,7 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  BUILD_PATH: "site"
+  BUILD_PATH: "TajsGraph/site"
 
 jobs:
   build:
