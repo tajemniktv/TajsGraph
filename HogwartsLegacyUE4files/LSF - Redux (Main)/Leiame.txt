@@ -1,3 +1,0 @@
-1 - Coloque o arquivo "CChromaEditorLibrary64.dll" em <local de instalação do jogo>/Phoenix/Plugins/ChromaSDKPlugin/Binaries/Win64, substitua o arquivo quando pedido.
-
-2 - Vá para "AppData\Local\Hogwarts Legacy\Saved\Config\WindowsNoEditor" e coloque o "Engine.ini" lá.
