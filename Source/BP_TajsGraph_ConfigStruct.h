@@ -42,6 +42,9 @@ public:
     UPROPERTY(BlueprintReadWrite)
     bool enableTransFrontLayer{};
 
+    UPROPERTY(BlueprintReadWrite)
+    float reflectionSmoothness{};
+
     /* Retrieves active configuration value and returns object of this struct containing it */
     static FBP_TajsGraph_ConfigStruct GetActiveConfig(UObject* WorldContext) {
         FBP_TajsGraph_ConfigStruct ConfigStruct{};

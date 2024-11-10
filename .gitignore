@@ -77,7 +77,10 @@ DerivedDataCache/*
 .idea/*
 
 # Remove content upload since I'm not sure about uploading sourcecode for some of these assets
-Content/*
+Content/Buildables/*
 
 # Remove the hidden files 
 .Hidden/*
+
+# Remove the Surce files as they contain the source code of other plugins
+Source/*
