@@ -1,7 +1,6 @@
 {
   "recommendations": [
-    "astro-build.astro-vscode",
-    "stripe.markdoc-language-support"
+    "astro-build.astro-vscode"
   ],
   "unwantedRecommendations": []
 }
