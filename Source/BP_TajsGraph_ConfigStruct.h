@@ -45,6 +45,18 @@ public:
 
     UPROPERTY(BlueprintReadWrite)
     bool VSMFarShadowCulling{};
+
+    UPROPERTY(BlueprintReadWrite)
+    bool ContactShadows{};
+
+    UPROPERTY(BlueprintReadWrite)
+    bool DFShadows{};
+
+    UPROPERTY(BlueprintReadWrite)
+    bool CapsuleShadows{};
+
+    UPROPERTY(BlueprintReadWrite)
+    bool CascadedShadows{};
 };
 
 USTRUCT(BlueprintType)
