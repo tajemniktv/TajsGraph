@@ -77,6 +77,12 @@ public:
 
     UPROPERTY(BlueprintReadWrite)
     bool TranslucentSurfaceReflections{};
+
+    UPROPERTY(BlueprintReadWrite)
+    bool CinematicLumenOFF{};
+
+    UPROPERTY(BlueprintReadWrite)
+    int32 TraceDistanceSDF{};
 };
 
 USTRUCT(BlueprintType)
@@ -104,10 +110,16 @@ public:
     bool EnableReflex{};
 
     UPROPERTY(BlueprintReadWrite)
-    int32 MaxFPS{};
+    int32 MaxFPSOFF{};
 
     UPROPERTY(BlueprintReadWrite)
-    int32 ScreenResolution{};
+    int32 ScreenResolutionOFF{};
+
+    UPROPERTY(BlueprintReadWrite)
+    bool ForceHighestMipOnUI{};
+
+    UPROPERTY(BlueprintReadWrite)
+    bool FullyLoadUsedTextures{};
 };
 
 /* Struct generated from Mod Configuration Asset '/TajsGraph/Config/BP_TajsGraph_Config' */
