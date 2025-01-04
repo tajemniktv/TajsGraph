@@ -80,7 +80,7 @@ DerivedDataCache/*
 Content/Buildables/*
 
 # Remove the hidden files 
-.Hidden/*
+Hidden/*
 
 # Remove the Surce files as they contain the source code of other plugins
 Source/*
