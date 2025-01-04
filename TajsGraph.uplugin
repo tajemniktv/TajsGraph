@@ -1,7 +1,7 @@
 {
 	"FileVersion": 3,
 	"Version": 2,
-	"VersionName": "2.1.9",
+	"VersionName": "2.2.0",
 	"FriendlyName": "Taj's Graphical Overhaul",
 	"Description": "Get ready to see every pipe and every constructor in eye-popping detail. Crank up those graphics and make efficiency look sexy!",
 	"Category": "Modding",
@@ -26,7 +26,7 @@
 			"SemVersion": "^2.1.0"
 		}
 	],
-	"SemVersion": "2.1.9",
+	"SemVersion": "2.2.0",
 	"GameVersion": ">=383729",
 	"RequiredOnRemote": false
 }
