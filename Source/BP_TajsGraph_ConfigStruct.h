@@ -10,6 +10,7 @@ struct FBP_TajsGraph_ConfigStruct_LumenSection;
 struct FBP_TajsGraph_ConfigStruct_OtherSection;
 struct FBP_TajsGraph_ConfigStruct_DevSection;
 struct FBP_TajsGraph_ConfigStruct_LumenSection_AsyncLumenSection;
+struct FBP_TajsGraph_ConfigStruct_LumenSection_LumenReflectionsSection;
 
 USTRUCT(BlueprintType)
 struct FBP_TajsGraph_ConfigStruct_LumenSection_AsyncLumenSection {
@@ -23,6 +24,23 @@ public:
 
     UPROPERTY(BlueprintReadWrite)
     bool AsyncSceneLighting{};
+};
+
+USTRUCT(BlueprintType)
+struct FBP_TajsGraph_ConfigStruct_LumenSection_LumenReflectionsSection {
+    GENERATED_BODY()
+public:
+    UPROPERTY(BlueprintReadWrite)
+    bool LumenScreenTraces{};
+
+    UPROPERTY(BlueprintReadWrite)
+    bool LumenReflectionsScreenSpaceReconstruction{};
+
+    UPROPERTY(BlueprintReadWrite)
+    float LumenReflectionSmoothing{};
+
+    UPROPERTY(BlueprintReadWrite)
+    bool TranslucentSurfaceReflections{};
 };
 
 USTRUCT(BlueprintType)
@@ -57,6 +75,9 @@ public:
 
     UPROPERTY(BlueprintReadWrite)
     bool CascadedShadows{};
+
+    UPROPERTY(BlueprintReadWrite)
+    bool HeightfieldShadows{};
 };
 
 USTRUCT(BlueprintType)
@@ -70,19 +91,31 @@ public:
     bool Lumen{};
 
     UPROPERTY(BlueprintReadWrite)
-    bool LumenScreenTraces{};
-
-    UPROPERTY(BlueprintReadWrite)
-    float LumenReflectionSmoothing{};
-
-    UPROPERTY(BlueprintReadWrite)
-    bool TranslucentSurfaceReflections{};
-
-    UPROPERTY(BlueprintReadWrite)
     bool CinematicLumenOFF{};
 
     UPROPERTY(BlueprintReadWrite)
     int32 TraceDistanceSDF{};
+
+    UPROPERTY(BlueprintReadWrite)
+    int32 OctRes{};
+
+    UPROPERTY(BlueprintReadWrite)
+    int32 LumenScreenProbeGatherDownsampleFactor{};
+
+    UPROPERTY(BlueprintReadWrite)
+    int32 LumenScreenProbeGatherTemporalMaxFramesAccumulated{};
+
+    UPROPERTY(BlueprintReadWrite)
+    int32 LumenScreenProbeGatherRadianceCacheProbeResolution{};
+
+    UPROPERTY(BlueprintReadWrite)
+    int32 LumenSceneSurfaceCacheCardTexelDensityScale{};
+
+    UPROPERTY(BlueprintReadWrite)
+    int32 LumenSceneSurfaceCacheCompress{};
+
+    UPROPERTY(BlueprintReadWrite)
+    FBP_TajsGraph_ConfigStruct_LumenSection_LumenReflectionsSection LumenReflectionsSection{};
 };
 
 USTRUCT(BlueprintType)
@@ -94,14 +127,6 @@ public:
 
     UPROPERTY(BlueprintReadWrite)
     bool EnhancedAutoExposure{};
-};
-
-USTRUCT(BlueprintType)
-struct FBP_TajsGraph_ConfigStruct_DevSection {
-    GENERATED_BODY()
-public:
-    UPROPERTY(BlueprintReadWrite)
-    int32 OctRes{};
 
     UPROPERTY(BlueprintReadWrite)
     bool EnableDLSSFG{};
@@ -110,16 +135,24 @@ public:
     bool EnableReflex{};
 
     UPROPERTY(BlueprintReadWrite)
-    int32 MaxFPSOFF{};
+    bool tickAllowAsyncTickCleanup{};
 
     UPROPERTY(BlueprintReadWrite)
-    int32 ScreenResolutionOFF{};
+    bool tickAllowAsyncTickDispatch{};
+};
 
+USTRUCT(BlueprintType)
+struct FBP_TajsGraph_ConfigStruct_DevSection {
+    GENERATED_BODY()
+public:
     UPROPERTY(BlueprintReadWrite)
     bool ForceHighestMipOnUI{};
 
     UPROPERTY(BlueprintReadWrite)
     bool FullyLoadUsedTextures{};
+
+    UPROPERTY(BlueprintReadWrite)
+    bool PLACEHOLDER{};
 };
 
 /* Struct generated from Mod Configuration Asset '/TajsGraph/Config/BP_TajsGraph_Config' */
