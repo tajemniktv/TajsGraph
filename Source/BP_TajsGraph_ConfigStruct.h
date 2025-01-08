@@ -9,6 +9,7 @@ struct FBP_TajsGraph_ConfigStruct_ShadowsSection;
 struct FBP_TajsGraph_ConfigStruct_LumenSection;
 struct FBP_TajsGraph_ConfigStruct_OtherSection;
 struct FBP_TajsGraph_ConfigStruct_DevSection;
+struct FBP_TajsGraph_ConfigStruct_GeneralRenderingSection;
 struct FBP_TajsGraph_ConfigStruct_LumenSection_AsyncLumenSection;
 struct FBP_TajsGraph_ConfigStruct_LumenSection_LumenReflectionsSection;
 
@@ -155,6 +156,14 @@ public:
     bool PLACEHOLDER{};
 };
 
+USTRUCT(BlueprintType)
+struct FBP_TajsGraph_ConfigStruct_GeneralRenderingSection {
+    GENERATED_BODY()
+public:
+    UPROPERTY(BlueprintReadWrite)
+    float GrassDensity{};
+};
+
 /* Struct generated from Mod Configuration Asset '/TajsGraph/Config/BP_TajsGraph_Config' */
 USTRUCT(BlueprintType)
 struct FBP_TajsGraph_ConfigStruct {
@@ -174,6 +183,9 @@ public:
 
     UPROPERTY(BlueprintReadWrite)
     FBP_TajsGraph_ConfigStruct_DevSection DevSection{};
+
+    UPROPERTY(BlueprintReadWrite)
+    FBP_TajsGraph_ConfigStruct_GeneralRenderingSection GeneralRenderingSection{};
 
     /* Retrieves active configuration value and returns object of this struct containing it */
     static FBP_TajsGraph_ConfigStruct GetActiveConfig(UObject* WorldContext) {
