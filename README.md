@@ -1,9 +1,10 @@
-# Taj's Graphical Overhaul
-
+# Graphical Overhaul by (Taj)emnikTV 
+---
 ## Work in progress 🧪✨
 
 This mod is a work in progress. Below you’ll find a proof-of-concept description of what the mod aims to achieve. Everything is subject to change. While the mod should be stable enough for regular gameplay, bugs may still pop up—either due to my occasional laziness or the unpredictability of development. Please DO report them, as every bug report helps make this project better! 🛠️🐛
 
+---
 ## Overview 📚
 
 💡 Tired of your factories looking a bit... meh? Want to turn your industrial empire into a visual masterpiece? Well, you're in luck! This is your ticket to transforming Satisfactory from "Oh, that's nice" to "Holy, is this even the same game?!"
@@ -20,6 +21,7 @@ This mod is a work in progress. Below you’ll find a proof-of-concept descripti
 
 > ###### ⚠️ **Warning: Side effects may include excessive screenshot taking and the sudden urge to redesign your entire factory for optimal photo ops. Get ready to reimagine your builds!**
 
+---
 ## Features ✨
 
 - **Quality Improvements**
@@ -46,12 +48,14 @@ This mod is a work in progress. Below you’ll find a proof-of-concept descripti
 
 (This list represents the mod's main features but may not include the latest additions, experimental options, or deprecated settings.)&#x20;
 
+---
 ## Installation 📥
 
 1. Install the mod using the **Satisfactory Mod Manager (SMM)**:
    - Download and install SMM from [Satisfactory Modding](https://ficsit.app/).
    - Search for "Taj's Graphical Overhaul" in SMM and install the mod.
 
+---
 ## Configuration ⚙️
 
 The mod includes a streamlined configuration system accessible through the game's settings, focusing on advanced tweaks for enhanced graphical control.&#x20;
@@ -60,14 +64,17 @@ The mod includes a streamlined configuration system accessible through the game'
 
 \- **Advanced Configuration**: Provides detailed controls for many graphical features. Designed for experienced users who understand how these settings impact performance and visual quality. Adjustments are applied dynamically, allowing users to see changes in real-time without needing to restart the game.
 
+---
 ## Known Issues 🐛
 
 - For any bugs or issues, please visit the [GitHub Issues Tracker](https://github.com/YourUsername/SatisfactoryGraphicsOverhaul/issues).
 
+---
 ## Support 📞
 
 If you encounter any issues, please open an issue on the [GitHub Issues Tracker](https://github.com/tajemniktv/TajsGraph/issues). Additionally, feel free to reach out on the [Satisfactory Modding Discord server](https://discord.gg/R85q7SrtUD) for community support and direct communication.
 
+---
 ## Compatibility 🔧🎮
 
 - Fully compatible with Satisfactory Update 1.0.
@@ -76,6 +83,7 @@ If you encounter any issues, please open an issue on the [GitHub Issues Tracker]
 - Custom player modifications to the `engine.ini` file may be overridden by this mod, which could affect personal configurations.
 - Full support for DirectX 12 rendering API **only**.&#x20;
 
+---
 ## Hardware specs 💻📊
 
 The mod has been tested on the following hardware setup to ensure stability and performance. Your experience may vary depending on your system specifications:&#x20;
@@ -87,10 +95,12 @@ The mod has been tested on the following hardware setup to ensure stability and 
 
 This configuration should allow for a 60 FPS playthrough with most medium/high-quality settings enabled. Users with lower or higher specs are encouraged to tweak the advanced configuration options for the best results.&#x20;
 
+---
 ## Contributing 🤝💡
 
 We welcome contributions! Whether you’re fixing bugs, adding features, or improving documentation, feel free to open a pull request.&#x20;
 
+---
 ## Development Setup 🛠️📁
 
 Please note: Not all parts of the code are open-source due to the need to protect work. The publicly available sections focus on compatibility and functionality to assist other modders.&#x20;
@@ -102,18 +112,20 @@ Please note: Not all parts of the code are open-source due to the need to protec
 2. Place the mod files into the `mods` folder within the Satisfactory project directory.
 3. Rebuild the project to apply changes, and the mod should be ready for testing in your local environment.&#x20;
 
+---
 ## Acknowledgements 🌟🤝
 
 - Special thanks to the *Satisfactory* modding community for their tools and support.
 - Inspired by the needs of players who value both performance and graphical fidelity.
 
+---
 ## License 📜
 
 This project is licensed under a proprietary license. While the mod is free to use, not all parts of the code are open-source. The publicly available sections are intended to aid compatibility and support for the community. Redistribution or modification of the either open-source or closed-source parts is prohibited without explicit permission.
 
 For full license details, please refer to the [License File](https://github.com/tajemniktv/TajsGraph/blob/main/LICENSE.md).
 
-
+---
 ## Additional Information 📖🔍
 
 - **Deprecated Steam Guide**: [Link to the old guide](https://steamcommunity.com/sharedfiles/filedetails/?id=3338551101) (now redirects to this mod).
