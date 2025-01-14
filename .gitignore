@@ -84,3 +84,6 @@ Hidden/*
 
 # Remove the Surce files as they contain the source code of other plugins
 Source/*
+
+# Remove config files due to some people casually just stealing it and signing it with their name
+Config/*
