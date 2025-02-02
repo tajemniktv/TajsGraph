@@ -23,7 +23,7 @@
 		{
 			"Name": "ModUpdateNotifier",
 			"Enabled": true,
-			"SemVersion": "^2.1.0"
+			"SemVersion": "^2.2.0"
 		}
 	],
 	"SemVersion": "2.2.8",
