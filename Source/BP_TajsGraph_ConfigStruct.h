@@ -42,6 +42,9 @@ public:
 
     UPROPERTY(BlueprintReadWrite)
     bool TranslucentSurfaceReflections{};
+
+    UPROPERTY(BlueprintReadWrite)
+    bool ScreenSpaceReconstructionTonemap{};
 };
 
 USTRUCT(BlueprintType)
