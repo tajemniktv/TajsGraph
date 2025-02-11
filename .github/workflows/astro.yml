@@ -38,7 +38,7 @@ jobs:
       - name: Detect package manager
         id: detect-package-manager
         run: |
-          if [ -f "/home/runner/work/TajsGraph/TajsGraph/starlight/yarn.lock" ]; then
+          if [ -f "/home/runner/work/TajsGraph/starlight/yarn.lock" ]; then
             echo "manager=yarn" >> $GITHUB_OUTPUT
             echo "command=install" >> $GITHUB_OUTPUT
             echo "runner=yarn" >> $GITHUB_OUTPUT
