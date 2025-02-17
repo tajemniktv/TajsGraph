@@ -157,6 +157,9 @@ public:
 
     UPROPERTY(BlueprintReadWrite)
     bool PLACEHOLDER{};
+
+    UPROPERTY(BlueprintReadWrite)
+    int32 ResetSurfaceCacheEveryNFrames{};
 };
 
 USTRUCT(BlueprintType)
@@ -165,9 +168,6 @@ struct FBP_TajsGraph_ConfigStruct_GeneralRenderingSection {
 public:
     UPROPERTY(BlueprintReadWrite)
     float GrassDensity{};
-
-    UPROPERTY(BlueprintReadWrite)
-    int32 ResetSurfaceCacheEveryNFrames{};
 };
 
 /* Struct generated from Mod Configuration Asset '/TajsGraph/Config/BP_TajsGraph_Config' */
