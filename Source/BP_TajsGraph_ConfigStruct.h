@@ -95,7 +95,7 @@ public:
     bool Lumen{};
 
     UPROPERTY(BlueprintReadWrite)
-    bool CinematicLumenOFF{};
+    bool UnoptimizedLumen{};
 
     UPROPERTY(BlueprintReadWrite)
     int32 TraceDistanceSDF{};
