@@ -1,0 +1,10 @@
+{
+  "$schema": "https://raw.githubusercontent.com/budak7273/ContentLib_Documentation/main/JsonSchemas/CL_CDO.json",
+  "Class": "/Script/FactoryGame.FGBuildableWall",
+  "Edits": [
+    {
+      "Property": "mBlockInstancingWithLumen",
+      "Value": "true"
+    }
+  ]
+}

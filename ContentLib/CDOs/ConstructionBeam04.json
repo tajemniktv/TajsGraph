@@ -1,0 +1,10 @@
+{
+  "$schema": "https://raw.githubusercontent.com/budak7273/ContentLib_Documentation/main/JsonSchemas/CL_CDO.json",
+  "Class": "/Game/FactoryGame/Buildable/Building/Wall/Build_Construction_Beam_04.Default__Build_Construction_Beam_04_C",
+  "Edits": [
+    {
+      "Property": "mBlockInstancingWithLumen",
+      "Value": "true"
+    }
+  ]
+}
