@@ -1,7 +1,7 @@
 {
 	"FileVersion": 3,
 	"Version": 3,
-	"VersionName": "3.0.0",
+	"VersionName": "3.1.0",
 	"FriendlyName": "Taj's Graphical Overhaul",
 	"Description": "Get ready to see every pipe and every constructor in eye-popping detail. Crank up those graphics and make efficiency look sexy!",
 	"Category": "Modding",
@@ -24,9 +24,14 @@
 			"Name": "ModUpdateNotifier",
 			"Enabled": true,
 			"SemVersion": "^2.2.0"
+		},
+		{
+			"Name": "ContentLib",
+			"Enabled": true,
+			"SemVersion": "^1.5.0"
 		}
 	],
-	"SemVersion": "3.0.0",
+	"SemVersion": "3.1.0",
 	"GameVersion": ">=383729",
 	"RequiredOnRemote": false
 }
