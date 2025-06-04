@@ -67,7 +67,7 @@ The mod includes a streamlined configuration system accessible through the game'
 ---
 ## Known Issues 🐛
 
-- For any bugs or issues, please visit the [GitHub Issues Tracker](https://github.com/YourUsername/SatisfactoryGraphicsOverhaul/issues).
+- For any bugs or issues, please visit the [GitHub Issues Tracker](https://github.com/tajemniktv/TajsGraph/issues).
 
 ---
 ## Support 📞
