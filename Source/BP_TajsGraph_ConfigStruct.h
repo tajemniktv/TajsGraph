@@ -168,6 +168,18 @@ struct FBP_TajsGraph_ConfigStruct_GeneralRenderingSection {
 public:
     UPROPERTY(BlueprintReadWrite)
     float GrassDensity{};
+
+    UPROPERTY(BlueprintReadWrite)
+    bool EnableEyeAdaptation{};
+
+    UPROPERTY(BlueprintReadWrite)
+    bool EnableSkylight{};
+
+    UPROPERTY(BlueprintReadWrite)
+    bool EnableSkyAtmosphere{};
+
+    UPROPERTY(BlueprintReadWrite)
+    bool EnableFog{};
 };
 
 /* Struct generated from Mod Configuration Asset '/TajsGraph/Config/BP_TajsGraph_Config' */
