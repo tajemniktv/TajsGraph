@@ -82,6 +82,9 @@ public:
 
     UPROPERTY(BlueprintReadWrite)
     bool HeightfieldShadows{};
+
+    UPROPERTY(BlueprintReadWrite)
+    int32 LightShadowQuality{};
 };
 
 USTRUCT(BlueprintType)
@@ -180,6 +183,12 @@ public:
 
     UPROPERTY(BlueprintReadWrite)
     bool EnableFog{};
+
+    UPROPERTY(BlueprintReadWrite)
+    float ViewDistanceScale{};
+
+    UPROPERTY(BlueprintReadWrite)
+    float FoliageLodDistanceScale{};
 };
 
 /* Struct generated from Mod Configuration Asset '/TajsGraph/Config/BP_TajsGraph_Config' */
