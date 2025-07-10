@@ -85,6 +85,9 @@ public:
 
     UPROPERTY(BlueprintReadWrite)
     int32 LightShadowQuality{};
+
+    UPROPERTY(BlueprintReadWrite)
+    int32 DFSQuality{};
 };
 
 USTRUCT(BlueprintType)
@@ -173,7 +176,7 @@ public:
     float GrassDensity{};
 
     UPROPERTY(BlueprintReadWrite)
-    bool EnableEyeAdaptation{};
+    int32 EnableEyeAdaptation{};
 
     UPROPERTY(BlueprintReadWrite)
     bool EnableSkylight{};
