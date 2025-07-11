@@ -75,6 +75,19 @@ body:
         - Other installed mods:
     validations:
       required: true
+      
+  # ——— Logs & configs ———
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs & config & save
+      description: |
+        Paste the **latest log file** and, if possible, your game / mod settings and save file.
+        Tip: you can drag-and-drop files here — GitHub will upload them automatically.
+      placeholder: |
+        <!-- Paste or drag files below -->
+    validations:
+      required: false
 
   # ——— Frequency ———
   - type: dropdown
