@@ -88,6 +88,9 @@ public:
 
     UPROPERTY(BlueprintReadWrite)
     int32 DFSQuality{};
+
+    UPROPERTY(BlueprintReadWrite)
+    float ShadowRadiusThreshold{};
 };
 
 USTRUCT(BlueprintType)
@@ -149,6 +152,9 @@ public:
 
     UPROPERTY(BlueprintReadWrite)
     bool tickAllowAsyncTickDispatch{};
+
+    UPROPERTY(BlueprintReadWrite)
+    int32 StreamingPoolSize{};
 };
 
 USTRUCT(BlueprintType)
