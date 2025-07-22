@@ -4,6 +4,7 @@ title: "[Bug]: "
 labels: ["bug"]
 assignees:
   - tajemniktv
+projects: tajemniktv/2
 
 body:
   # ——— Intro ———
@@ -47,13 +48,6 @@ body:
       render: bash
     validations:
       required: true
-
-  # ——— Expected behaviour ———
-  - type: textarea
-    id: expected
-    attributes:
-      label: Expected behaviour
-      description: Tell us what you expected to happen instead.
 
   # ——— Screens / video ———
   - type: textarea
