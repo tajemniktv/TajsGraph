@@ -8,7 +8,7 @@ This license applies to the mod **"Taj's Graphical Overhaul"** created for the g
 Redistribution and use of this mod, in source, binary forms, or any other form, with or without modification, are **not permitted** unless explicitly approved in writing by the copyright holder (TajemnikTV [Grzegorz Kaczmarski]).
 
 ## **STREAMING AND CONTENT CREATION**
-The use of this mod in videos, live streams, or other content is permitted **only if proper credit is given** to the creator (TajemnikTV [Grzegorz Kaczmarski]). Redistribution of modified versions of this mod in public or private formats is prohibited without explicit, written permission.
+The use of this mod in videos, live streams, or other content is allowed without the need for credit (although it would be nice;)) to the creator (TajemnikTV [Grzegorz Kaczmarski]). Redistribution of modified versions of this mod in public or private formats is prohibited without explicit, written permission.
 
 ## **CONTACT**
 For permissions, questions, or further information, please contact:
