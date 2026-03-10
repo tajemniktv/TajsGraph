@@ -1,4 +1,5 @@
 #include "ShaderMapDiagnostics.h"
+#include "TajsGraphEarlyShared.h"
 
 #include "MaterialShared.h"
 #include "MaterialShaderType.h"
@@ -25,9 +26,6 @@ namespace ShaderMapDiagnostics
 {
 	namespace
 	{
-		const TCHAR* const ConfigSection = TEXT("ShaderDiagnostics");
-		const TCHAR* const ConfigKey = TEXT("EnableMaterialShaderMapDiag");
-		const TCHAR* const HashRemapConfigKey = TEXT("EnableMaterialShaderMapHashRemap");
 		const TCHAR* const DefaultWorldGridPath = TEXT("/Engine/EngineMaterials/WorldGridMaterial");
 		const TCHAR* const DefaultPostProcessPath = TEXT("/Engine/EngineMaterials/DefaultPostProcessMaterial");
 		const TCHAR* const ReplacementDefaultPostProcessPath = TEXT("/TajsGraph/Engine/EngineMaterials/DefaultPostProcessMaterial");
@@ -154,13 +152,7 @@ namespace ShaderMapDiagnostics
 				bEnableHashRemap = true;
 
 				TArray<FString> ConfigCandidates;
-				if (TSharedPtr<IPlugin> Plugin = IPluginManager::Get().FindPlugin(TEXT("TajsGraph")))
-				{
-					ConfigCandidates.Add(FPaths::Combine(Plugin->GetBaseDir(), TEXT("Config"), TEXT("Engine.ini")));
-				}
-
-				ConfigCandidates.Add(FPaths::Combine(FPaths::ProjectDir(), TEXT("Mods"), TEXT("TajsGraph"), TEXT("Config"), TEXT("Engine.ini")));
-				ConfigCandidates.Add(GEngineIni);
+				TajsGraphEarlyShared::GatherConfigCandidatePaths(ConfigCandidates);
 
 				for (const FString& ConfigPath : ConfigCandidates)
 				{
@@ -170,13 +162,13 @@ namespace ShaderMapDiagnostics
 					}
 
 					bool bValue = false;
-					if (GConfig->GetBool(ConfigSection, ConfigKey, bValue, ConfigPath))
+					if (GConfig->GetBool(TajsGraphEarlyShared::GetConfigSection(), TajsGraphEarlyShared::GetEnableMaterialShaderMapDiagKey(), bValue, ConfigPath))
 					{
 						bEnabled = bValue;
 					}
 
 					bool bHashRemapValue = bEnableHashRemap;
-					if (GConfig->GetBool(ConfigSection, HashRemapConfigKey, bHashRemapValue, ConfigPath))
+					if (GConfig->GetBool(TajsGraphEarlyShared::GetConfigSection(), TajsGraphEarlyShared::GetEnableMaterialShaderMapHashRemapKey(), bHashRemapValue, ConfigPath))
 					{
 						bEnableHashRemap = bHashRemapValue;
 					}
@@ -188,27 +180,17 @@ namespace ShaderMapDiagnostics
 			void LoadAssetInfoIndex()
 			{
 				const FString PlatformName = TEXT("PCD3D_SM6");
-				TArray<FString> CandidateDirs;
-				GatherShaderDirs(CandidateDirs);
-				CandidateDirs.Add(FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectSavedDir(), TEXT("Shaders"), PlatformName + TEXT("-") + PlatformName)));
-				CandidateDirs.Add(FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectSavedDir(), TEXT("Cooked"), TEXT("Windows"), TEXT("FactoryGame"), TEXT("Content"))));
-				CandidateDirs.Add(FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectSavedDir(), TEXT("Cooked"), TEXT("Windows"), TEXT("FactoryGame"), TEXT("Metadata"), TEXT("ShaderLibrarySource"))));
-
-				TArray<FString> UniqueDirs;
-				for (const FString& Dir : CandidateDirs)
-				{
-					UniqueDirs.AddUnique(Dir);
-				}
-				CandidateDirs = MoveTemp(UniqueDirs);
+				TArray<TajsGraphEarlyShared::FAssetInfoSearchDir> SearchDirs;
+				TajsGraphEarlyShared::GatherAssetInfoSearchDirs(PlatformName, SearchDirs);
 
 				bool bLoadedAnyAssetInfo = false;
 				for (const FString& LibraryName : { FString(TEXT("FactoryExtra")), FString(TEXT("TajsGraph")) })
 				{
 					const FString AssetInfoFilename = FString::Printf(TEXT("ShaderAssetInfo-%s-%s-%s.assetinfo.json"), *LibraryName, *PlatformName, *PlatformName);
-					for (const FString& Dir : CandidateDirs)
+					for (const TajsGraphEarlyShared::FAssetInfoSearchDir& SearchDir : SearchDirs)
 					{
-						const FString AssetInfoPath = FPaths::Combine(Dir, AssetInfoFilename);
-						if (LoadAssetInfoFile(AssetInfoPath, LibraryName))
+						const FString AssetInfoPath = FPaths::Combine(SearchDir.Directory, AssetInfoFilename);
+						if (LoadAssetInfoFile(AssetInfoPath, LibraryName, SearchDir.SourceKind))
 						{
 							bLoadedAnyAssetInfo = true;
 							break;
@@ -229,9 +211,10 @@ namespace ShaderMapDiagnostics
 				const FString* ReplacementPostProcessHash = ExpectedHashByAssetPath.Find(ReplacementDefaultPostProcessPath);
 
 				UE_LOG(LogTajsGraphEarlyDiag, Display,
-					TEXT("[ShaderDiag][Startup] Enabled=true IndexedAssets=%d IndexedHashes=%d WorldGridHash=%s EngineDefaultPostProcessHash=%s TajsGraphDefaultPostProcessHash=%s"),
+					TEXT("[ShaderDiag][Startup] Enabled=true IndexedAssets=%d IndexedHashes=%d HashRemapMode=%s WorldGridHash=%s EngineDefaultPostProcessHash=%s TajsGraphDefaultPostProcessHash=%s"),
 					ExpectedHashByAssetPath.Num(),
 					AssetPathsByHash.Num(),
+					bEnableHashRemap ? TEXT("diagnostic_only") : TEXT("disabled"),
 					WorldGridHash ? **WorldGridHash : TEXT("<missing>"),
 					DefaultPostProcessHash ? **DefaultPostProcessHash : TEXT("<missing>"),
 					ReplacementPostProcessHash ? **ReplacementPostProcessHash : TEXT("<missing>"));
@@ -420,7 +403,7 @@ namespace ShaderMapDiagnostics
 				Context.MaterialName = Material ? Material->GetAssetName() : FString();
 				if (Material)
 				{
-					Context.AssetPath = NormalizeObjectPath(Material->GetFullPath());
+					Context.AssetPath = TajsGraphEarlyShared::NormalizeObjectPath(Material->GetFullPath());
 				}
 				if (Context.AssetPath.IsEmpty())
 				{
@@ -428,7 +411,7 @@ namespace ShaderMapDiagnostics
 				}
 				Context.Platform = LegacyShaderPlatformToShaderFormat(Platform).ToString();
 				Context.RuntimeHash = ShaderMap ? ShaderMap->GetShaderContentHash().ToString() : FString();
-				Context.ExpectedHash = ExpectedHashByAssetPath.FindRef(Context.AssetPath);
+				Context.ExpectedHash = GetExpectedHashForAssetPath(Context.AssetPath);
 				Context.MatchState = CalculateMatchState(Context.RuntimeHash, Context.ExpectedHash);
 				return Context;
 			}
@@ -444,7 +427,7 @@ namespace ShaderMapDiagnostics
 				FRuntimeMaterialContext Context;
 				Context.RuntimeHash = RuntimeHash;
 				Context.Platform = LegacyShaderPlatformToShaderFormat(Platform).ToString();
-				Context.MatchState = TEXT("missing_factoryextra_hash");
+				Context.MatchState = TEXT("missing_expected_indexed_hash");
 				return Context;
 			}
 
@@ -467,6 +450,7 @@ namespace ShaderMapDiagnostics
 			{
 				return Context.AssetPath == DefaultWorldGridPath
 					|| Context.AssetPath == DefaultPostProcessPath
+					|| Context.AssetPath == ReplacementDefaultPostProcessPath
 					|| Context.MaterialName == TEXT("WorldGridMaterial")
 					|| Context.MaterialName == TEXT("DefaultPostProcessMaterial");
 			}
@@ -479,7 +463,7 @@ namespace ShaderMapDiagnostics
 				}
 				if (ExpectedHash.IsEmpty())
 				{
-					return TEXT("missing_factoryextra_hash");
+					return TEXT("missing_expected_indexed_hash");
 				}
 				return RuntimeHash.Equals(ExpectedHash, ESearchCase::CaseSensitive) ? TEXT("match") : TEXT("mismatch");
 			}
@@ -609,27 +593,7 @@ namespace ShaderMapDiagnostics
 					*DetailSource);
 			}
 
-			void GatherShaderDirs(TArray<FString>& OutDirs) const
-			{
-				OutDirs.Reset();
-
-				if (TSharedPtr<IPlugin> Plugin = IPluginManager::Get().FindPlugin(TEXT("TajsGraph")))
-				{
-					OutDirs.Add(FPaths::ConvertRelativePathToFull(FPaths::Combine(Plugin->GetContentDir(), TEXT("Shaders"))));
-				}
-
-				OutDirs.Add(FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectDir(), TEXT("Mods"), TEXT("TajsGraph"), TEXT("Content"), TEXT("Shaders"))));
-				OutDirs.Add(TEXT("../../../FactoryGame/Mods/TajsGraph/Content/Shaders"));
-
-				TArray<FString> UniqueDirs;
-				for (const FString& Dir : OutDirs)
-				{
-					UniqueDirs.AddUnique(Dir);
-				}
-				OutDirs = MoveTemp(UniqueDirs);
-			}
-
-			bool LoadAssetInfoFile(const FString& AssetInfoPath, const FString& SourceLabel)
+			bool LoadAssetInfoFile(const FString& AssetInfoPath, const FString& SourceLabel, const FString& SourceKind)
 			{
 				if (!FPaths::FileExists(AssetInfoPath))
 				{
@@ -688,18 +652,20 @@ namespace ShaderMapDiagnostics
 							continue;
 						}
 
-						ExpectedHashByAssetPath.Add(AssetPath, ShaderMapHash);
+						const FString NormalizedAssetPath = TajsGraphEarlyShared::NormalizeObjectPath(AssetPath);
+						ExpectedHashByAssetPath.Add(NormalizedAssetPath, ShaderMapHash);
 						TArray<FString>& Assets = AssetPathsByHash.FindOrAdd(ShaderMapHash);
-						Assets.AddUnique(AssetPath);
+						Assets.AddUnique(NormalizedAssetPath);
 						++AddedEntryCount;
 						AddedHashes.Add(ShaderMapHash);
 					}
 				}
 
 				UE_LOG(LogTajsGraphEarlyDiag, Display,
-					TEXT("[ShaderDiag][Startup] Loaded %s assetinfo index from %s (%d entries, %d hashes, %d total indexed assets)"),
+					TEXT("[ShaderDiag][Startup] Loaded %s assetinfo index from %s [source=%s] (%d entries, %d hashes, %d total indexed assets)"),
 					*SourceLabel,
 					*AssetInfoPath,
+					*SourceKind,
 					AddedEntryCount,
 					AddedHashes.Num(),
 					ExpectedHashByAssetPath.Num());
@@ -796,8 +762,8 @@ namespace ShaderMapDiagnostics
 				}
 
 				const FString FileSystemPath = Message.Mid(PathStart, PathEnd - PathStart).TrimStartAndEnd();
-				const FString AssetPath = NormalizeAssetPath(FileSystemPath);
-				const FString MaterialName = ExtractShortName(AssetPath);
+				const FString AssetPath = TajsGraphEarlyShared::NormalizeAssetPathFromFileSystem(FileSystemPath);
+				const FString MaterialName = TajsGraphEarlyShared::ExtractShortName(AssetPath);
 
 				if (!MaterialName.IsEmpty() && !AssetPath.IsEmpty())
 				{
@@ -824,7 +790,7 @@ namespace ShaderMapDiagnostics
 				if (OpenParen != INDEX_NONE && CloseParen != INDEX_NONE && CloseParen > OpenParen)
 				{
 					MaterialName = Payload.Left(OpenParen);
-					AssetPath = NormalizeObjectPath(Payload.Mid(OpenParen + 1, CloseParen - OpenParen - 1));
+					AssetPath = TajsGraphEarlyShared::NormalizeObjectPath(Payload.Mid(OpenParen + 1, CloseParen - OpenParen - 1));
 				}
 
 				MaterialName = MaterialName.TrimStartAndEnd();
@@ -839,8 +805,8 @@ namespace ShaderMapDiagnostics
 				}
 
 				const FString Platform = PlatformFromMessage.IsEmpty() ? TEXT("PCD3D_SM6") : PlatformFromMessage;
-				const FString ExpectedHash = ExpectedHashByAssetPath.FindRef(AssetPath);
-				const FString MatchState = ExpectedHash.IsEmpty() ? TEXT("missing_factoryextra_hash") : TEXT("missing_runtime_hash");
+				const FString ExpectedHash = GetExpectedHashForAssetPath(AssetPath);
+				const FString MatchState = ExpectedHash.IsEmpty() ? TEXT("missing_expected_indexed_hash") : TEXT("missing_runtime_hash");
 
 				TArray<FString> MissingHashes;
 				{
@@ -922,10 +888,10 @@ namespace ShaderMapDiagnostics
 				FString SingleMatch;
 				for (const TPair<FString, FString>& Pair : ExpectedHashByAssetPath)
 				{
-					if (ExtractShortName(Pair.Key).Equals(MaterialName, ESearchCase::CaseSensitive))
-					{
-						if (SingleMatch.IsEmpty())
+						if (TajsGraphEarlyShared::ExtractShortName(Pair.Key).Equals(MaterialName, ESearchCase::CaseSensitive))
 						{
+							if (SingleMatch.IsEmpty())
+							{
 							SingleMatch = Pair.Key;
 						}
 						else
@@ -937,66 +903,15 @@ namespace ShaderMapDiagnostics
 				return SingleMatch;
 			}
 
-			static FString NormalizeObjectPath(const FString& ObjectPath)
-			{
-				FString Result = ObjectPath.TrimStartAndEnd();
-				const int32 DotIndex = Result.Find(TEXT("."), ESearchCase::CaseSensitive, ESearchDir::FromEnd);
-				if (DotIndex != INDEX_NONE)
-				{
-					Result.LeftInline(DotIndex);
-				}
-				return Result;
-			}
-
-			static FString NormalizeAssetPath(const FString& FileSystemPath)
-			{
-				FString Normalized = FileSystemPath;
-				FPaths::NormalizeFilename(Normalized);
-
-				const FString EngineMarker = TEXT("/Engine/Content/");
-				const FString ProjectMarker = TEXT("/FactoryGame/Content/");
-				const FString ModMarker = TEXT("/FactoryGame/Mods/TajsGraph/Content/");
-
-				if (const int32 Index = Normalized.Find(ModMarker, ESearchCase::IgnoreCase); Index != INDEX_NONE)
-				{
-					return FString(TEXT("/TajsGraph/")) + ChangeExtensionToAssetPath(Normalized.Mid(Index + ModMarker.Len()));
-				}
-
-				if (const int32 Index = Normalized.Find(EngineMarker, ESearchCase::IgnoreCase); Index != INDEX_NONE)
-				{
-					return FString(TEXT("/Engine/")) + ChangeExtensionToAssetPath(Normalized.Mid(Index + EngineMarker.Len()));
-				}
-
-				if (const int32 Index = Normalized.Find(ProjectMarker, ESearchCase::IgnoreCase); Index != INDEX_NONE)
-				{
-					return FString(TEXT("/Game/FactoryGame/")) + ChangeExtensionToAssetPath(Normalized.Mid(Index + ProjectMarker.Len()));
-				}
-
-				return FString();
-			}
-
-			static FString ChangeExtensionToAssetPath(FString RelativePath)
-			{
-				RelativePath.ReplaceInline(TEXT("\\"), TEXT("/"));
-				FPaths::RemoveDuplicateSlashes(RelativePath);
-				FString BaseFilename = FPaths::GetBaseFilename(RelativePath, false);
-				const FString Directory = FPaths::GetPath(RelativePath);
-				return Directory.IsEmpty()
-					? BaseFilename
-					: FString::Printf(TEXT("%s/%s"), *Directory, *BaseFilename);
-			}
-
-			static FString ExtractShortName(const FString& AssetPath)
+			FString GetExpectedHashForAssetPath(const FString& AssetPath) const
 			{
 				if (AssetPath.IsEmpty())
 				{
 					return FString();
 				}
 
-				FString Normalized = AssetPath;
-				Normalized.ReplaceInline(TEXT("\\"), TEXT("/"));
-				const int32 SlashIndex = Normalized.Find(TEXT("/"), ESearchCase::CaseSensitive, ESearchDir::FromEnd);
-				return SlashIndex == INDEX_NONE ? Normalized : Normalized.Mid(SlashIndex + 1);
+				FScopeLock Lock(&StateMutex);
+				return ExpectedHashByAssetPath.FindRef(AssetPath);
 			}
 
 			static FString ExtractQuotedValue(const FString& Message, const FString& Prefix)

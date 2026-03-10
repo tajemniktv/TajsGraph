@@ -6,19 +6,16 @@
 /**
  * Early initialization module for TajsGraph.
  *
- * Loaded during PostConfigInit to run diagnostics and attempt cache-based global
- * shader map population before the engine performs global shader verification.
+ * Loaded during PostConfigInit to orchestrate three early-startup behaviors:
+ *   - supplemental shader-library/global-cache loading
+ *   - configured default engine material overrides
+ *   - optional material shader-map diagnostics
  *
- * Two-phase approach:
- *   Phase 1 (PostConfigInit): Load the base vanilla GlobalShaderCache plus one or
- *     more loose supplemental shader caches from the mod into GGlobalShaderMap[SM6].
- *     This makes the map non-null before CompileGlobalShaderMap runs, so
- *     VerifyGlobalShaders is skipped entirely.
- *   Phase 2 (OnPostEngineInit): Open one or more loose ShaderArchive-*.ushaderbytecode
- *     packs from the mod's Content/Shaders folder as additional named library
- *     components. This can supplement both global shader lookups and project/material
- *     shader lookups (for example FactoryGame material permutations) when the cooked
- *     shader maps already reference those hashes.
+ * The module keeps startup ordering explicit:
+ *   1. apply configured engine material overrides
+ *   2. install diagnostics hooks if enabled
+ *   3. install the one-shot global shader detour (runtime only)
+ *   4. open supplemental shader bytecode libraries after engine init
  */
 class FTajsGraphEarlyModule : public IModuleInterface
 {
@@ -35,27 +32,18 @@ private:
 
 	/**
 	 * Returns whether early cache-load behavior should run.
-	 * Currently forced true for validation/debugging and should be gated by config later.
+	 * This stays disabled in editor builds, where the runtime startup detour is not needed.
 	 */
 	bool ShouldOverrideShaderVerification();
-
-	/**
-	 * Stub — actual loading happens inside the CompileGlobalShaderMap detour.
-	 * Kept to satisfy call-sites on non-Windows platforms.
-	 */
-	bool TryLoadCookedShaderData();
 
 	/**
 	 * Called via FCoreDelegates::OnPostEngineInit after FShaderCodeLibrary::InitForRuntime
 	 * has run. Opens the loose TajsGraph material shader library and any supplemental
 	 * shader bytecode packs so both global and project/material shader lookups can
-	 * resolve hashes from those archives when first dispatched.
+	 * resolve hashes from those archives.
 	 */
 	void OpenShaderLibrariesPostInit();
 
 	/** Handle for the OnPostEngineInit delegate so we can unbind after first call. */
 	FDelegateHandle PostEngineInitHandle;
-
-	// Reserved for potential future detour-based fallback path.
-	static void* OriginalOpenLibraryPtr;
 };

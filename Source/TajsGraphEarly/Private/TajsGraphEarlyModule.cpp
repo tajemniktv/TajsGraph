@@ -1,5 +1,6 @@
 #include "TajsGraphEarlyModule.h"
 #include "ShaderMapDiagnostics.h"
+#include "TajsGraphEarlyShared.h"
 
 #include "Modules/ModuleManager.h"
 #include "RenderCore.h"
@@ -27,138 +28,137 @@
 
 DEFINE_LOG_CATEGORY_STATIC(LogTajsGraphEarly, Display, All);
 
-// Static placeholder for original function pointer (for future detours)
-void *FTajsGraphEarlyModule::OriginalOpenLibraryPtr = nullptr;
-
 namespace
 {
-	const TCHAR* const ShaderDiagConfigSection = TEXT("ShaderDiagnostics");
-	const TCHAR* const EnableEngineDefaultMaterialOverridesKey = TEXT("EnableEngineDefaultMaterialOverrides");
-	const TCHAR* const DefaultMaterialOverrideKey = TEXT("DefaultMaterialOverride");
-	const TCHAR* const DefaultDeferredDecalMaterialOverrideKey = TEXT("DefaultDeferredDecalMaterialOverride");
-	const TCHAR* const DefaultLightFunctionMaterialOverrideKey = TEXT("DefaultLightFunctionMaterialOverride");
-	const TCHAR* const DefaultPostProcessMaterialOverrideKey = TEXT("DefaultPostProcessMaterialOverride");
-	const TCHAR* const WorldGridMaterialOverrideKey = TEXT("WorldGridMaterialOverride");
-
-	static void GatherTajsGraphConfigCandidates(TArray<FString>& OutConfigPaths)
+	struct FEngineMaterialOverrideDefinition
 	{
-		OutConfigPaths.Reset();
+		const TCHAR* ConfigKey;
+		const TCHAR* EngineSettingKey;
+		const TCHAR* SourceObjectPath;
+	};
 
-		if (TSharedPtr<IPlugin> Plugin = IPluginManager::Get().FindPlugin(TEXT("TajsGraph")))
-		{
-			OutConfigPaths.Add(FPaths::Combine(Plugin->GetBaseDir(), TEXT("Config"), TEXT("Engine.ini")));
-		}
+	struct FResolvedEngineMaterialOverride
+	{
+		const FEngineMaterialOverrideDefinition* Definition = nullptr;
+		FString TargetObjectPath;
+		FString TargetPackagePath;
+	};
 
-		OutConfigPaths.Add(FPaths::Combine(FPaths::ProjectDir(), TEXT("Mods"), TEXT("TajsGraph"), TEXT("Config"), TEXT("Engine.ini")));
-		OutConfigPaths.Add(GEngineIni);
+	static const TCHAR* const EngineConfigSection = TEXT("/Script/Engine.Engine");
 
-		TArray<FString> UniqueConfigPaths;
-		for (const FString& ConfigPath : OutConfigPaths)
-		{
-			if (!ConfigPath.IsEmpty())
-			{
-				UniqueConfigPaths.AddUnique(ConfigPath);
-			}
-		}
-		OutConfigPaths = MoveTemp(UniqueConfigPaths);
+	static const TArray<FEngineMaterialOverrideDefinition>& GetEngineMaterialOverrideDefinitions()
+	{
+		static const TArray<FEngineMaterialOverrideDefinition> Definitions = {
+			{ TajsGraphEarlyShared::GetWorldGridMaterialOverrideKey(), nullptr, TEXT("/Engine/EngineMaterials/WorldGridMaterial.WorldGridMaterial") },
+			{ TajsGraphEarlyShared::GetDefaultMaterialOverrideKey(), TEXT("DefaultMaterialName"), TEXT("/Engine/EngineMaterials/DefaultMaterial.DefaultMaterial") },
+			{ TajsGraphEarlyShared::GetDefaultDeferredDecalMaterialOverrideKey(), TEXT("DefaultDeferredDecalMaterialName"), TEXT("/Engine/EngineMaterials/DefaultDeferredDecalMaterial.DefaultDeferredDecalMaterial") },
+			{ TajsGraphEarlyShared::GetDefaultLightFunctionMaterialOverrideKey(), TEXT("DefaultLightFunctionMaterialName"), TEXT("/Engine/EngineMaterials/DefaultLightFunctionMaterial.DefaultLightFunctionMaterial") },
+			{ TajsGraphEarlyShared::GetDefaultPostProcessMaterialOverrideKey(), TEXT("DefaultPostProcessMaterialName"), TEXT("/Engine/EngineMaterials/DefaultPostProcessMaterial.DefaultPostProcessMaterial") },
+		};
+		return Definitions;
 	}
 
-	static bool ReadTajsGraphConfigBool(const TCHAR* KeyName, bool& OutValue)
+	static TArray<FResolvedEngineMaterialOverride> ResolveConfiguredEngineMaterialOverrides()
 	{
-		TArray<FString> ConfigCandidates;
-		GatherTajsGraphConfigCandidates(ConfigCandidates);
+		TArray<FResolvedEngineMaterialOverride> ResolvedOverrides;
 
-		for (const FString& ConfigPath : ConfigCandidates)
-		{
-			if (FPaths::FileExists(ConfigPath) && GConfig->GetBool(ShaderDiagConfigSection, KeyName, OutValue, ConfigPath))
-			{
-				return true;
-			}
-		}
-
-		return false;
-	}
-
-	static bool ReadTajsGraphConfigString(const TCHAR* KeyName, FString& OutValue)
-	{
-		TArray<FString> ConfigCandidates;
-		GatherTajsGraphConfigCandidates(ConfigCandidates);
-
-		for (const FString& ConfigPath : ConfigCandidates)
-		{
-			if (FPaths::FileExists(ConfigPath) && GConfig->GetString(ShaderDiagConfigSection, KeyName, OutValue, ConfigPath))
-			{
-				return true;
-			}
-		}
-
-		return false;
-	}
-
-	static void ApplyConfiguredDefaultMaterialOverride(const TCHAR* ConfigKey, const TCHAR* EngineSettingKey)
-	{
-		FString OverridePath;
-		if (!ReadTajsGraphConfigString(ConfigKey, OverridePath) || OverridePath.TrimStartAndEnd().IsEmpty())
-		{
-			return;
-		}
-
-		OverridePath = OverridePath.TrimStartAndEnd();
-		GConfig->SetString(TEXT("/Script/Engine.Engine"), EngineSettingKey, *OverridePath, GEngineIni);
-		UE_LOG(LogTajsGraphEarly, Display,
-			TEXT("[Startup] Overriding /Script/Engine.Engine.%s with %s"),
-			EngineSettingKey,
-			*OverridePath);
-	}
-
-	static void ApplyConfiguredDefaultMaterialOverrides()
-	{
 		bool bEnableOverrides = false;
-		if (!ReadTajsGraphConfigBool(EnableEngineDefaultMaterialOverridesKey, bEnableOverrides) || !bEnableOverrides)
+		if (!TajsGraphEarlyShared::ReadConfigBool(TajsGraphEarlyShared::GetEnableEngineDefaultMaterialOverridesKey(), bEnableOverrides) || !bEnableOverrides)
 		{
-			return;
+			return ResolvedOverrides;
 		}
 
-		ApplyConfiguredDefaultMaterialOverride(DefaultMaterialOverrideKey, TEXT("DefaultMaterialName"));
-		ApplyConfiguredDefaultMaterialOverride(DefaultDeferredDecalMaterialOverrideKey, TEXT("DefaultDeferredDecalMaterialName"));
-		ApplyConfiguredDefaultMaterialOverride(DefaultLightFunctionMaterialOverrideKey, TEXT("DefaultLightFunctionMaterialName"));
-		ApplyConfiguredDefaultMaterialOverride(DefaultPostProcessMaterialOverrideKey, TEXT("DefaultPostProcessMaterialName"));
+		for (const FEngineMaterialOverrideDefinition& Definition : GetEngineMaterialOverrideDefinitions())
+		{
+			FString RawOverridePath;
+			if (!TajsGraphEarlyShared::ReadConfigString(Definition.ConfigKey, RawOverridePath) || RawOverridePath.TrimStartAndEnd().IsEmpty())
+			{
+				continue;
+			}
+
+			FResolvedEngineMaterialOverride ResolvedOverride;
+			ResolvedOverride.Definition = &Definition;
+
+			FString Error;
+			if (!TajsGraphEarlyShared::NormalizeConfiguredObjectPath(RawOverridePath, ResolvedOverride.TargetObjectPath, ResolvedOverride.TargetPackagePath, Error))
+			{
+				UE_LOG(LogTajsGraphEarly, Warning,
+					TEXT("[Startup][Overrides] Ignoring %s=%s (%s)"),
+					Definition.ConfigKey,
+					*RawOverridePath,
+					Error.IsEmpty() ? TEXT("invalid asset path") : *Error);
+				continue;
+			}
+
+			ResolvedOverrides.Add(MoveTemp(ResolvedOverride));
+		}
+
+		return ResolvedOverrides;
 	}
 
-	static void AddConfiguredObjectRedirect(const TCHAR* OldObjectPath, const TCHAR* ConfigKey)
+	static void LogConfiguredEngineMaterialOverrides(const TArray<FResolvedEngineMaterialOverride>& ResolvedOverrides)
 	{
-		FString NewObjectPath;
-		if (!ReadTajsGraphConfigString(ConfigKey, NewObjectPath) || NewObjectPath.TrimStartAndEnd().IsEmpty())
+		if (ResolvedOverrides.IsEmpty())
 		{
+			UE_LOG(LogTajsGraphEarly, Display, TEXT("[Startup][Overrides] Enabled, but no valid default material overrides were configured."));
 			return;
 		}
 
-		NewObjectPath = NewObjectPath.TrimStartAndEnd();
+		for (const FResolvedEngineMaterialOverride& ResolvedOverride : ResolvedOverrides)
+		{
+			UE_LOG(LogTajsGraphEarly, Display,
+				TEXT("[Startup][Overrides] %s -> %s"),
+				ResolvedOverride.Definition ? ResolvedOverride.Definition->SourceObjectPath : TEXT("<unknown>"),
+				*ResolvedOverride.TargetObjectPath);
+		}
+	}
+
+	static void ApplyConfiguredDefaultMaterialOverrides(const TArray<FResolvedEngineMaterialOverride>& ResolvedOverrides)
+	{
+		for (const FResolvedEngineMaterialOverride& ResolvedOverride : ResolvedOverrides)
+		{
+			if (!ResolvedOverride.Definition || ResolvedOverride.Definition->EngineSettingKey == nullptr)
+			{
+				continue;
+			}
+
+			GConfig->SetString(EngineConfigSection, ResolvedOverride.Definition->EngineSettingKey, *ResolvedOverride.TargetObjectPath, GEngineIni);
+			UE_LOG(LogTajsGraphEarly, Display,
+				TEXT("[Startup][Overrides] Set %s.%s=%s"),
+				EngineConfigSection,
+				ResolvedOverride.Definition->EngineSettingKey,
+				*ResolvedOverride.TargetObjectPath);
+		}
+	}
+
+	static void ApplyConfiguredEngineMaterialRedirects(const TArray<FResolvedEngineMaterialOverride>& ResolvedOverrides)
+	{
+		if (ResolvedOverrides.IsEmpty())
+		{
+			return;
+		}
 
 		TArray<FCoreRedirect> Redirects;
-		Redirects.Emplace(ECoreRedirectFlags::Type_Object, FCoreRedirectObjectName(FString(OldObjectPath)), FCoreRedirectObjectName(NewObjectPath));
-		Redirects.Emplace(ECoreRedirectFlags::Type_Package, FCoreRedirectObjectName(NAME_None, NAME_None, *FPackageName::ObjectPathToPackageName(FString(OldObjectPath))), FCoreRedirectObjectName(NAME_None, NAME_None, *FPackageName::ObjectPathToPackageName(NewObjectPath)));
-		FCoreRedirects::AddRedirectList(Redirects, TEXT("TajsGraphEarlyConfiguredEngineMaterialOverride"));
-
-		UE_LOG(LogTajsGraphEarly, Display,
-			TEXT("[Startup] Added core redirect %s -> %s"),
-			OldObjectPath,
-			*NewObjectPath);
-	}
-
-	static void ApplyConfiguredEngineMaterialRedirects()
-	{
-		bool bEnableOverrides = false;
-		if (!ReadTajsGraphConfigBool(EnableEngineDefaultMaterialOverridesKey, bEnableOverrides) || !bEnableOverrides)
+		for (const FResolvedEngineMaterialOverride& ResolvedOverride : ResolvedOverrides)
 		{
-			return;
+			if (!ResolvedOverride.Definition)
+			{
+				continue;
+			}
+
+			Redirects.Emplace(ECoreRedirectFlags::Type_Object,
+				FCoreRedirectObjectName(FString(ResolvedOverride.Definition->SourceObjectPath)),
+				FCoreRedirectObjectName(ResolvedOverride.TargetObjectPath));
+
+			Redirects.Emplace(ECoreRedirectFlags::Type_Package,
+				FCoreRedirectObjectName(NAME_None, NAME_None, *FPackageName::ObjectPathToPackageName(FString(ResolvedOverride.Definition->SourceObjectPath))),
+				FCoreRedirectObjectName(NAME_None, NAME_None, *ResolvedOverride.TargetPackagePath));
 		}
 
-		AddConfiguredObjectRedirect(TEXT("/Engine/EngineMaterials/WorldGridMaterial"), WorldGridMaterialOverrideKey);
-		AddConfiguredObjectRedirect(TEXT("/Engine/EngineMaterials/DefaultPostProcessMaterial"), DefaultPostProcessMaterialOverrideKey);
-		AddConfiguredObjectRedirect(TEXT("/Engine/EngineMaterials/DefaultDeferredDecalMaterial"), DefaultDeferredDecalMaterialOverrideKey);
-		AddConfiguredObjectRedirect(TEXT("/Engine/EngineMaterials/DefaultLightFunctionMaterial"), DefaultLightFunctionMaterialOverrideKey);
-		AddConfiguredObjectRedirect(TEXT("/Engine/EngineMaterials/DefaultMaterial"), DefaultMaterialOverrideKey);
+		if (!Redirects.IsEmpty())
+		{
+			FCoreRedirects::AddRedirectList(Redirects, TEXT("TajsGraphEarlyConfiguredEngineMaterialOverride"));
+		}
 	}
 }
 
@@ -191,33 +191,7 @@ namespace ShaderHook
 
 	static void GatherTajsGraphShaderDirs(TArray<FString>& OutShaderDirs)
 	{
-		OutShaderDirs.Reset();
-
-		// 1) Mounted virtual path used by packaged mod paks.
-		OutShaderDirs.Add(TEXT("/TajsGraph/Shaders"));
-
-		// 2) Typical mounted physical root for mod content in shipping installs.
-		OutShaderDirs.Add(TEXT("../../../FactoryGame/Mods/TajsGraph/Content/Shaders"));
-
-		// 3) Project-relative Mods path (useful for local runs).
-		OutShaderDirs.Add(FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectDir(), TEXT("Mods"), TEXT("TajsGraph"), TEXT("Content"), TEXT("Shaders"))));
-
-		// 4) Plugin manager content dir (can point to Plugins or Mods depending on runtime).
-		if (TSharedPtr<IPlugin> Plugin = IPluginManager::Get().FindPlugin(TEXT("TajsGraph")))
-		{
-			OutShaderDirs.Add(FPaths::ConvertRelativePathToFull(FPaths::Combine(Plugin->GetContentDir(), TEXT("Shaders"))));
-		}
-
-		// Fallback candidates for local/dev layouts.
-		OutShaderDirs.Add(FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectPluginsDir(), TEXT("TajsGraph"), TEXT("Content"), TEXT("Shaders"))));
-
-		// Remove duplicates while preserving order.
-		TArray<FString> UniqueDirs;
-		for (const FString& Dir : OutShaderDirs)
-		{
-			UniqueDirs.AddUnique(Dir);
-		}
-		OutShaderDirs = MoveTemp(UniqueDirs);
+		TajsGraphEarlyShared::GatherShaderDirCandidates(OutShaderDirs);
 	}
 
 	static TArray<FSupplementalShaderPack> DiscoverSupplementalShaderPacks(const FString& ShaderDir, const FString& PlatformName)
@@ -829,10 +803,19 @@ void FTajsGraphEarlyModule::StartupModule()
 #endif
 
 	UE_LOG(LogTajsGraphEarly, Display, TEXT("[Startup] === TajsGraphEarly (PostConfigInit) initialized ==="));
-	ApplyConfiguredEngineMaterialRedirects();
-	ApplyConfiguredDefaultMaterialOverrides();
+
+	const TArray<FResolvedEngineMaterialOverride> ResolvedOverrides = ResolveConfiguredEngineMaterialOverrides();
+
+	UE_LOG(LogTajsGraphEarly, Display, TEXT("[Startup][Phase 1/5] Applying configured engine material overrides."));
+	LogConfiguredEngineMaterialOverrides(ResolvedOverrides);
+	ApplyConfiguredEngineMaterialRedirects(ResolvedOverrides);
+	ApplyConfiguredDefaultMaterialOverrides(ResolvedOverrides);
+
+	UE_LOG(LogTajsGraphEarly, Display, TEXT("[Startup][Phase 2/5] Emitting early shader diagnostics."));
 	LogShaderDiagnostics();
 	LogD3D12Diagnostics(TEXT("PostConfigInit"));
+
+	UE_LOG(LogTajsGraphEarly, Display, TEXT("[Startup][Phase 3/5] Installing material shader-map diagnostics."));
 	ShaderMapDiagnostics::Startup();
 
 	// Install a one-shot detour on CompileGlobalShaderMap.
@@ -848,6 +831,7 @@ void FTajsGraphEarlyModule::StartupModule()
 	//   There is no UE delegate between InitForRuntime and CompileGlobalShaderMap.
 	//   The detour fires in that exact window: library open, verify not yet run.
 #if PLATFORM_WINDOWS
+	UE_LOG(LogTajsGraphEarly, Display, TEXT("[Startup][Phase 4/5] Installing global shader detour."));
 	if (ShouldOverrideShaderVerification())
 	{
 		if (ShaderHook::InstallDetour())
@@ -867,6 +851,7 @@ void FTajsGraphEarlyModule::StartupModule()
 
 	// Belt-and-suspenders: also open libraries after full engine init in case
 	// the detour succeeded for the .bin but the bytecode library needs reopening.
+	UE_LOG(LogTajsGraphEarly, Display, TEXT("[Startup][Phase 5/5] Scheduling supplemental shader library registration."));
 	PostEngineInitHandle = FCoreDelegates::OnPostEngineInit.AddRaw(this, &FTajsGraphEarlyModule::OpenShaderLibrariesPostInit);
 
 	UE_LOG(LogTajsGraphEarly, Display, TEXT("[Startup] === TajsGraphEarly initialization complete ==="));
@@ -1020,14 +1005,6 @@ bool FTajsGraphEarlyModule::ShouldOverrideShaderVerification()
 		return false;
 	}
 	return true;
-}
-
-bool FTajsGraphEarlyModule::TryLoadCookedShaderData()
-{
-	// This function is only called on non-Windows (where the detour isn't available).
-	// On Windows the loading is done inside ShaderHook::HookedCompileGlobalShaderMap,
-	// which fires after FShaderCodeLibrary::InitForRuntime when LoadResource is safe.
-	return false;
 }
 
 #undef LOCTEXT_NAMESPACE
