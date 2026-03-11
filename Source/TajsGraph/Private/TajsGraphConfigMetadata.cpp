@@ -285,18 +285,4 @@ namespace TajsGraphInternal
         return Descriptors;
     }
 
-    const TArray<FString>& GetKnownSettingSchemaKeys()
-    {
-        static const TArray<FString> Keys = []()
-        {
-            TArray<FString> Out;
-            for (const FTajsGraphSettingDescriptor& Descriptor : GetKnownSettingDescriptors())
-            {
-                Out.Add(Descriptor.Id);
-            }
-            return Out;
-        }();
-
-        return Keys;
-    }
 }

@@ -121,7 +121,6 @@ namespace TajsGraphInternal {
     void ApplyNaniteOverrides(UStaticMeshComponent* Component, const FPPVConfig& Config, const TCHAR* LogContext);
 
     int32 GetSettingSchemaVersion();
-    const TArray<FString>& GetKnownSettingSchemaKeys();
     const TArray<FTajsGraphSettingDescriptor>& GetKnownSettingDescriptors();
 
     FString GetBundledSettingsConfigPath();

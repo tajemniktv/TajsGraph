@@ -58,12 +58,16 @@ namespace
 		return Definitions;
 	}
 
+	static bool AreEngineMaterialOverridesEnabled()
+	{
+		bool bEnableOverrides = false;
+		return TajsGraphEarlyShared::ReadConfigBool(TajsGraphEarlyShared::GetEnableEngineDefaultMaterialOverridesKey(), bEnableOverrides) && bEnableOverrides;
+	}
+
 	static TArray<FResolvedEngineMaterialOverride> ResolveConfiguredEngineMaterialOverrides()
 	{
 		TArray<FResolvedEngineMaterialOverride> ResolvedOverrides;
-
-		bool bEnableOverrides = false;
-		if (!TajsGraphEarlyShared::ReadConfigBool(TajsGraphEarlyShared::GetEnableEngineDefaultMaterialOverridesKey(), bEnableOverrides) || !bEnableOverrides)
+		if (!AreEngineMaterialOverridesEnabled())
 		{
 			return ResolvedOverrides;
 		}
@@ -96,11 +100,17 @@ namespace
 		return ResolvedOverrides;
 	}
 
-	static void LogConfiguredEngineMaterialOverrides(const TArray<FResolvedEngineMaterialOverride>& ResolvedOverrides)
+	static void LogConfiguredEngineMaterialOverrides(const bool bOverridesEnabled, const TArray<FResolvedEngineMaterialOverride>& ResolvedOverrides)
 	{
+		if (!bOverridesEnabled)
+		{
+			UE_LOG(LogTajsGraphEarly, Display, TEXT("[Startup][Overrides] Engine material overrides are disabled."));
+			return;
+		}
+
 		if (ResolvedOverrides.IsEmpty())
 		{
-			UE_LOG(LogTajsGraphEarly, Display, TEXT("[Startup][Overrides] Enabled, but no valid default material overrides were configured."));
+			UE_LOG(LogTajsGraphEarly, Warning, TEXT("[Startup][Overrides] Enabled, but no valid default material overrides were configured."));
 			return;
 		}
 
@@ -113,8 +123,42 @@ namespace
 		}
 	}
 
-	static void ApplyConfiguredDefaultMaterialOverrides(const TArray<FResolvedEngineMaterialOverride>& ResolvedOverrides)
+	static void ApplyConfiguredDefaultMaterialOverrides(const bool bOverridesEnabled, const TArray<FResolvedEngineMaterialOverride>& ResolvedOverrides)
 	{
+		const FString TajsGraphMaterialRoot = TEXT("/TajsGraph/");
+		TSet<FString> ActiveEngineSettingKeys;
+		for (const FResolvedEngineMaterialOverride& ResolvedOverride : ResolvedOverrides)
+		{
+			if (ResolvedOverride.Definition && ResolvedOverride.Definition->EngineSettingKey != nullptr)
+			{
+				ActiveEngineSettingKeys.Add(ResolvedOverride.Definition->EngineSettingKey);
+			}
+		}
+
+		bool bConfigModified = false;
+		for (const FEngineMaterialOverrideDefinition& Definition : GetEngineMaterialOverrideDefinitions())
+		{
+			if (Definition.EngineSettingKey == nullptr)
+			{
+				continue;
+			}
+
+			if (!bOverridesEnabled || !ActiveEngineSettingKeys.Contains(Definition.EngineSettingKey))
+			{
+				FString CurrentValue;
+				const bool bHasConfiguredValue = GConfig->GetString(EngineConfigSection, Definition.EngineSettingKey, CurrentValue, GEngineIni);
+				if (bHasConfiguredValue && CurrentValue.StartsWith(TajsGraphMaterialRoot, ESearchCase::CaseSensitive) && GConfig->RemoveKey(EngineConfigSection, Definition.EngineSettingKey, GEngineIni))
+				{
+					UE_LOG(LogTajsGraphEarly, Display,
+						TEXT("[Startup][Overrides] Cleared stale %s.%s from %s"),
+						EngineConfigSection,
+						Definition.EngineSettingKey,
+						*GEngineIni);
+					bConfigModified = true;
+				}
+			}
+		}
+
 		for (const FResolvedEngineMaterialOverride& ResolvedOverride : ResolvedOverrides)
 		{
 			if (!ResolvedOverride.Definition || ResolvedOverride.Definition->EngineSettingKey == nullptr)
@@ -128,6 +172,12 @@ namespace
 				EngineConfigSection,
 				ResolvedOverride.Definition->EngineSettingKey,
 				*ResolvedOverride.TargetObjectPath);
+			bConfigModified = true;
+		}
+
+		if (bConfigModified)
+		{
+			GConfig->Flush(false, GEngineIni);
 		}
 	}
 
@@ -804,12 +854,13 @@ void FTajsGraphEarlyModule::StartupModule()
 
 	UE_LOG(LogTajsGraphEarly, Display, TEXT("[Startup] === TajsGraphEarly (PostConfigInit) initialized ==="));
 
+	const bool bOverridesEnabled = AreEngineMaterialOverridesEnabled();
 	const TArray<FResolvedEngineMaterialOverride> ResolvedOverrides = ResolveConfiguredEngineMaterialOverrides();
 
 	UE_LOG(LogTajsGraphEarly, Display, TEXT("[Startup][Phase 1/5] Applying configured engine material overrides."));
-	LogConfiguredEngineMaterialOverrides(ResolvedOverrides);
+	LogConfiguredEngineMaterialOverrides(bOverridesEnabled, ResolvedOverrides);
 	ApplyConfiguredEngineMaterialRedirects(ResolvedOverrides);
-	ApplyConfiguredDefaultMaterialOverrides(ResolvedOverrides);
+	ApplyConfiguredDefaultMaterialOverrides(bOverridesEnabled, ResolvedOverrides);
 
 	UE_LOG(LogTajsGraphEarly, Display, TEXT("[Startup][Phase 2/5] Emitting early shader diagnostics."));
 	LogShaderDiagnostics();

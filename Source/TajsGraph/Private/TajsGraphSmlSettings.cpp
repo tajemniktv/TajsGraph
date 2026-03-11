@@ -10,26 +10,67 @@
 #include "Engine/Engine.h"
 #include "Engine/GameInstance.h"
 #include "Misc/Paths.h"
+#include "UObject/Class.h"
 #include "UObject/SoftObjectPtr.h"
 #include "TajsGraphModule.h"
 
 namespace
 {
     constexpr TCHAR ConfigClassPath[] = TEXT("/TajsGraph/Config/TajsGraph_ModConfig.TajsGraph_ModConfig_C");
+    constexpr TCHAR FallbackModReference[] = TEXT("TajsGraph");
     TSubclassOf<UModConfiguration> LoadConfigClass();
+
+    FConfigId ResolveConfigId(const UModConfiguration* DefaultConfig)
+    {
+        FConfigId ResolvedConfigId;
+        if (DefaultConfig)
+        {
+            ResolvedConfigId = DefaultConfig->ConfigId;
+        }
+
+        if (ResolvedConfigId.ModReference.TrimStartAndEnd().IsEmpty())
+        {
+            ResolvedConfigId.ModReference = FallbackModReference;
+        }
+
+        return ResolvedConfigId;
+    }
+
+    void EnsureConfigIdAssigned(TSubclassOf<UModConfiguration> ConfigClass)
+    {
+        if (!ConfigClass)
+        {
+            return;
+        }
+
+        UModConfiguration* DefaultConfig = ConfigClass.GetDefaultObject();
+        if (!DefaultConfig)
+        {
+            return;
+        }
+
+        const FConfigId ResolvedConfigId = ResolveConfigId(DefaultConfig);
+        if (!(DefaultConfig->ConfigId == ResolvedConfigId))
+        {
+            DefaultConfig->ConfigId = ResolvedConfigId;
+            UE_LOG(LogTajsGraph, Warning, TEXT("[TajsGraph][Settings] Normalized empty config id on '%s' to %s:%s"),
+                *ConfigClass->GetPathName(),
+                *ResolvedConfigId.ModReference,
+                *ResolvedConfigId.ConfigCategory);
+        }
+
+    }
 
     FConfigId MakeConfigId()
     {
         if (TSubclassOf<UModConfiguration> ConfigClass = LoadConfigClass())
         {
-            if (const UModConfiguration* DefaultConfig = ConfigClass.GetDefaultObject())
-            {
-                return DefaultConfig->ConfigId;
-            }
+            EnsureConfigIdAssigned(ConfigClass);
+            return ResolveConfigId(ConfigClass.GetDefaultObject());
         }
 
         FConfigId FallbackConfigId;
-        FallbackConfigId.ModReference = TEXT("TajsGraph");
+        FallbackConfigId.ModReference = FallbackModReference;
         FallbackConfigId.ConfigCategory = TEXT("");
         return FallbackConfigId;
     }
@@ -110,6 +151,7 @@ namespace TajsGraphSmlSettings
             {
                 if (TSubclassOf<UModConfiguration> ConfigClass = LoadConfigClass())
                 {
+                    EnsureConfigIdAssigned(ConfigClass);
                     if (const UModConfiguration* DefaultConfig = ConfigClass.GetDefaultObject())
                     {
                         return DefaultConfig->RootSection;
@@ -125,6 +167,7 @@ namespace TajsGraphSmlSettings
         {
             if (TSubclassOf<UModConfiguration> ConfigClass = LoadConfigClass())
             {
+                EnsureConfigIdAssigned(ConfigClass);
                 ConfigManager->RegisterModConfiguration(ConfigClass);
                 RootSection = ConfigManager->GetConfigurationRootSection(ConfigId);
             }

@@ -27,7 +27,6 @@ public:
     static bool ForceApplySettings();
     static FString GetSettingsConfigPath();
     static int32 GetSettingsSchemaVersion();
-    static TArray<FString> GetSettingSchemaKeys();
     static TArray<FTajsGraphSettingDescriptor> GetSettingDescriptors();
     static FTajsGraphSettingChangedDelegate& OnSettingChanged();
 

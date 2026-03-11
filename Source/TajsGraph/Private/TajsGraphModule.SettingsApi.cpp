@@ -48,10 +48,6 @@ int32 FTajsGraphModule::GetSettingsSchemaVersion() {
 	return GetSettingSchemaVersion();
 }
 
-TArray<FString> FTajsGraphModule::GetSettingSchemaKeys() {
-	return GetKnownSettingSchemaKeys();
-}
-
 TArray<FTajsGraphSettingDescriptor> FTajsGraphModule::GetSettingDescriptors() {
 	return GetKnownSettingDescriptors();
 }
