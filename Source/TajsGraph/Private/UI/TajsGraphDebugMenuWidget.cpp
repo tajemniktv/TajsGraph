@@ -2,6 +2,7 @@
 #include "UI/TajsGraphDebugMenuWidget.h"
 
 #include "TajsGraphModule.h"
+#include "TajsGraphSmlSettings.h"
 #include "Blueprint/WidgetTree.h"
 #include "Components/Border.h"
 #include "Components/Button.h"
@@ -57,6 +58,55 @@ static FString MakeSectionLabel(const FString& SectionKey)
         return FString::Printf(TEXT("%s / %s"), *Category, *Subcategory);
     }
     return SectionKey;
+}
+
+static void BroadcastSettingChange(const FString& Section, const FString& Key, const FString& Value)
+{
+    FTajsGraphModule::OnSettingChanged().Broadcast(Section, Key, Value);
+}
+
+static bool PersistBoolSetting(const FString& Section, const FString& Key, const bool bValue)
+{
+    if (!TajsGraphSmlSettings::SetBool(Section, Key, bValue))
+    {
+        return false;
+    }
+
+    BroadcastSettingChange(Section, Key, bValue ? TEXT("true") : TEXT("false"));
+    return true;
+}
+
+static bool PersistIntSetting(const FString& Section, const FString& Key, const int32 Value)
+{
+    if (!TajsGraphSmlSettings::SetInt(Section, Key, Value))
+    {
+        return false;
+    }
+
+    BroadcastSettingChange(Section, Key, FString::FromInt(Value));
+    return true;
+}
+
+static bool PersistFloatSetting(const FString& Section, const FString& Key, const float Value)
+{
+    if (!TajsGraphSmlSettings::SetFloat(Section, Key, Value))
+    {
+        return false;
+    }
+
+    BroadcastSettingChange(Section, Key, FString::SanitizeFloat(Value));
+    return true;
+}
+
+static bool PersistStringSetting(const FString& Section, const FString& Key, const FString& Value)
+{
+    if (!TajsGraphSmlSettings::SetString(Section, Key, Value))
+    {
+        return false;
+    }
+
+    BroadcastSettingChange(Section, Key, Value);
+    return true;
 }
 
 static UTextBlock* AddTextLine(UWidgetTree* WidgetTree, UPanelWidget* Parent, const FString& Text, const FLinearColor& Color = FLinearColor(0.90f, 0.95f, 1.0f, 1.0f), int32 FontSize = 10)
@@ -417,7 +467,7 @@ void UTajsGraphDebugMenuWidget::HandleGenerateReportClicked()
 }
 void UTajsGraphDebugMenuWidget::HandleExpandedArtifactsChanged(const bool bChecked)
 {
-    if (!FTajsGraphModule::SetBoolSetting(TEXT("DebugHub"), TEXT("WriteExpandedReportArtifacts"), bChecked, false))
+    if (!PersistBoolSetting(TEXT("DebugHub"), TEXT("WriteExpandedReportArtifacts"), bChecked))
     {
         SetStatusMessage(TEXT("Cannot update WriteExpandedReportArtifacts."));
         return;
@@ -1011,7 +1061,7 @@ void UTajsGraphDebugMenuWidget::RebuildDebugReportsTab()
     if (ExpandedCheck)
     {
         bool bExpanded = false;
-        FTajsGraphModule::GetBoolSetting(TEXT("DebugHub"), TEXT("WriteExpandedReportArtifacts"), bExpanded);
+        TajsGraphSmlSettings::GetBool(TEXT("DebugHub"), TEXT("WriteExpandedReportArtifacts"), bExpanded);
         ExpandedCheck->SetIsChecked(bExpanded);
         ExpandedCheck->OnCheckStateChanged.AddDynamic(this, &UTajsGraphDebugMenuWidget::HandleExpandedArtifactsChanged);
         if (UHorizontalBoxSlot* ExpandedCheckSlot = Row2->AddChildToHorizontalBox(ExpandedCheck))
@@ -1199,7 +1249,7 @@ bool UTajsGraphDebugMenuWidget::TryReadLiveValue(const FTajsGraphSettingDescript
     case ETajsGraphSettingType::Bool:
     {
         bool bValue = false;
-        if (!FTajsGraphModule::GetBoolSetting(SectionName, KeyName, bValue))
+        if (!TajsGraphSmlSettings::GetBool(SectionName, KeyName, bValue))
         {
             return false;
         }
@@ -1209,7 +1259,7 @@ bool UTajsGraphDebugMenuWidget::TryReadLiveValue(const FTajsGraphSettingDescript
     case ETajsGraphSettingType::Int:
     {
         int32 Value = 0;
-        if (!FTajsGraphModule::GetIntSetting(SectionName, KeyName, Value))
+        if (!TajsGraphSmlSettings::GetInt(SectionName, KeyName, Value))
         {
             return false;
         }
@@ -1219,7 +1269,7 @@ bool UTajsGraphDebugMenuWidget::TryReadLiveValue(const FTajsGraphSettingDescript
     case ETajsGraphSettingType::Float:
     {
         float Value = 0.0f;
-        if (!FTajsGraphModule::GetFloatSetting(SectionName, KeyName, Value))
+        if (!TajsGraphSmlSettings::GetFloat(SectionName, KeyName, Value))
         {
             return false;
         }
@@ -1231,7 +1281,7 @@ bool UTajsGraphDebugMenuWidget::TryReadLiveValue(const FTajsGraphSettingDescript
     default:
     {
         FString Value;
-        if (!FTajsGraphModule::GetStringSetting(SectionName, KeyName, Value))
+        if (!TajsGraphSmlSettings::GetString(SectionName, KeyName, Value))
         {
             return false;
         }
@@ -1250,27 +1300,27 @@ bool UTajsGraphDebugMenuWidget::ApplySettingValue(const FTajsGraphSettingDescrip
     {
     case ETajsGraphSettingType::Bool:
     {
-        if (!FTajsGraphModule::SetBoolSetting(SectionName, KeyName, ParseBoolText(Value), false))
+        if (!PersistBoolSetting(SectionName, KeyName, ParseBoolText(Value)))
         {
-            OutError = TEXT("SetBoolSetting failed");
+            OutError = TEXT("SetBool failed");
             return false;
         }
         return true;
     }
     case ETajsGraphSettingType::Int:
     {
-        if (!FTajsGraphModule::SetIntSetting(SectionName, KeyName, FCString::Atoi(*Value.TrimStartAndEnd()), false))
+        if (!PersistIntSetting(SectionName, KeyName, FCString::Atoi(*Value.TrimStartAndEnd())))
         {
-            OutError = TEXT("SetIntSetting failed");
+            OutError = TEXT("SetInt failed");
             return false;
         }
         return true;
     }
     case ETajsGraphSettingType::Float:
     {
-        if (!FTajsGraphModule::SetFloatSetting(SectionName, KeyName, FCString::Atof(*Value.TrimStartAndEnd()), false))
+        if (!PersistFloatSetting(SectionName, KeyName, FCString::Atof(*Value.TrimStartAndEnd())))
         {
-            OutError = TEXT("SetFloatSetting failed");
+            OutError = TEXT("SetFloat failed");
             return false;
         }
         return true;
@@ -1279,9 +1329,9 @@ bool UTajsGraphDebugMenuWidget::ApplySettingValue(const FTajsGraphSettingDescrip
     case ETajsGraphSettingType::String:
     default:
     {
-        if (!FTajsGraphModule::SetStringSetting(SectionName, KeyName, Value, false))
+        if (!PersistStringSetting(SectionName, KeyName, Value))
         {
-            OutError = TEXT("SetStringSetting failed");
+            OutError = TEXT("SetString failed");
             return false;
         }
         return true;
@@ -1317,9 +1367,9 @@ FString UTajsGraphDebugMenuWidget::GetCompatibilityTextForMode(const ETajsGraphV
     bool bEngineAttempt = true;
     bool bRuntimeCVars = true;
     bool bPPFallback = true;
-    FTajsGraphModule::GetBoolSetting(TEXT("Visualization"), TEXT("EnableEngineViewAttempt"), bEngineAttempt);
-    FTajsGraphModule::GetBoolSetting(TEXT("Visualization"), TEXT("EnableRuntimeVisCVars"), bRuntimeCVars);
-    FTajsGraphModule::GetBoolSetting(TEXT("Visualization"), TEXT("EnablePostProcessFallback"), bPPFallback);
+    TajsGraphSmlSettings::GetBool(TEXT("Visualization"), TEXT("EnableEngineViewAttempt"), bEngineAttempt);
+    TajsGraphSmlSettings::GetBool(TEXT("Visualization"), TEXT("EnableRuntimeVisCVars"), bRuntimeCVars);
+    TajsGraphSmlSettings::GetBool(TEXT("Visualization"), TEXT("EnablePostProcessFallback"), bPPFallback);
 
     const bool bEngineMode = Mode == ETajsGraphVisMode::Lit || Mode == ETajsGraphVisMode::Unlit || Mode == ETajsGraphVisMode::Wireframe ||
         Mode == ETajsGraphVisMode::DetailLighting || Mode == ETajsGraphVisMode::LightingOnly || Mode == ETajsGraphVisMode::Reflections ||

@@ -1,6 +1,6 @@
 #include "Debug/TajsGraphVisualizationSubsystem.h"
 
-#include "TajsGraphModule.h"
+#include "TajsGraphSmlSettings.h"
 #include "Engine/Engine.h"
 #include "Engine/GameViewportClient.h"
 #include "Engine/PostProcessVolume.h"
@@ -75,7 +75,7 @@ static ETajsGraphVisMode WrapMode(const int32 RawMode) {
 
 static void LoadVisualizationConfigBool(const TCHAR* Key, const bool FallbackValue, bool& OutValue) {
     bool SettingValue = FallbackValue;
-    if (FTajsGraphModule::GetBoolSetting(TEXT("Visualization"), Key, SettingValue)) {
+    if (TajsGraphSmlSettings::GetBool(TEXT("Visualization"), Key, SettingValue)) {
         OutValue = SettingValue;
         return;
     }
@@ -85,7 +85,7 @@ static void LoadVisualizationConfigBool(const TCHAR* Key, const bool FallbackVal
 
 static void LoadVisualizationConfigInt(const TCHAR* Key, const int32 FallbackValue, int32& OutValue) {
     int32 SettingValue = FallbackValue;
-    if (FTajsGraphModule::GetIntSetting(TEXT("Visualization"), Key, SettingValue)) {
+    if (TajsGraphSmlSettings::GetInt(TEXT("Visualization"), Key, SettingValue)) {
         OutValue = SettingValue;
         return;
     }

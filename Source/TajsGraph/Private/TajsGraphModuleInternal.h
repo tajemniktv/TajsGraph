@@ -80,6 +80,8 @@ namespace TajsGraphInternal {
         bool bFullyLoadUsedTextures = false;
         bool bTickAllowAsyncTickCleanup = true;
         bool bTickAllowAsyncTickDispatch = true;
+        float LightPoolRelevancy = 1.0f;
+        int32 MaximumActiveLights = 100;
 
         float LumenSceneLightingQuality = 1.0f;
         float LumenSceneDetail = 8.0f;

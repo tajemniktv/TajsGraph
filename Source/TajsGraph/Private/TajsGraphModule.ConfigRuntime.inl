@@ -25,11 +25,85 @@
         return StripWrappingQuotes(Result);
     }
 
+    static FString GetAssetLeafName(const FString& AssetPath)
+    {
+        int32 SlashIndex = INDEX_NONE;
+        if (!AssetPath.FindLastChar(TEXT('/'), SlashIndex) || SlashIndex == INDEX_NONE)
+        {
+            return AssetPath;
+        }
+
+        return AssetPath.Mid(SlashIndex + 1);
+    }
+
+    static FString CanonicalizeRemapAssetPath(const FString& RawPath)
+    {
+        FString Result = NormalizeRemapPath(RawPath);
+        if (Result.IsEmpty())
+        {
+            return Result;
+        }
+
+        Result.ReplaceInline(TEXT("\\"), TEXT("/"));
+
+        FString PackagePath;
+        FString SubObjectPath;
+        if (Result.Split(TEXT(":"), &PackagePath, &SubObjectPath, ESearchCase::CaseSensitive))
+        {
+            Result = PackagePath;
+        }
+
+        int32 DotIndex = INDEX_NONE;
+        if (Result.FindLastChar(TEXT('.'), DotIndex) && DotIndex > 0)
+        {
+            return Result;
+        }
+
+        const FString AssetName = GetAssetLeafName(Result);
+        if (AssetName.IsEmpty())
+        {
+            return Result;
+        }
+
+        return FString::Printf(TEXT("%s.%s"), *Result, *AssetName);
+    }
+
+    static void BuildRemapLookupKeys(const FString& RawPath, TArray<FString>& OutKeys)
+    {
+        OutKeys.Reset();
+
+        const FString CanonicalPath = CanonicalizeRemapAssetPath(RawPath);
+        if (CanonicalPath.IsEmpty())
+        {
+            return;
+        }
+
+        OutKeys.Add(CanonicalPath);
+
+        int32 DotIndex = INDEX_NONE;
+        if (CanonicalPath.FindLastChar(TEXT('.'), DotIndex) && DotIndex > 0)
+        {
+            const FString PackagePath = CanonicalPath.Left(DotIndex);
+            if (!PackagePath.IsEmpty())
+            {
+                OutKeys.Add(PackagePath);
+            }
+        }
+    }
+
     enum class ESettingValueType : uint8 {
         Bool,
         Int,
         Float,
         String
+    };
+
+    struct FRemapLoadStats
+    {
+        bool bSectionFound = false;
+        int32 EntryCount = 0;
+        int32 LoadedCount = 0;
+        int32 InvalidCount = 0;
     };
 
     struct FSettingKeySpec {
@@ -129,6 +203,8 @@
             { TEXT("Rendering"), TEXT("EnableReflex"), ESettingValueType::Bool },
             { TEXT("Rendering"), TEXT("ForceHighestMipOnUI"), ESettingValueType::Bool },
             { TEXT("Rendering"), TEXT("FullyLoadUsedTextures"), ESettingValueType::Bool },
+            { TEXT("Rendering"), TEXT("LightPoolRelevancy"), ESettingValueType::Float },
+            { TEXT("Rendering"), TEXT("MaximumActiveLights"), ESettingValueType::Int },
             { TEXT("Rendering"), TEXT("TickAllowAsyncTickCleanup"), ESettingValueType::Bool },
             { TEXT("Rendering"), TEXT("TickAllowAsyncTickDispatch"), ESettingValueType::Bool },
 
@@ -177,6 +253,7 @@
         if (FullKey == TEXT("DebugHub.LastStateWriteInterval")) { InOutValue = FMath::Clamp(InOutValue, 0.0f, 60.0f); return; }
         if (FullKey == TEXT("DebugHub.HitchThresholdMs")) { InOutValue = FMath::Clamp(InOutValue, 1.0f, 1000.0f); return; }
         if (FullKey == TEXT("DebugHub.HitchPerSignatureCooldownSec")) { InOutValue = FMath::Clamp(InOutValue, 0.0f, 600.0f); return; }
+        if (FullKey == TEXT("Rendering.LightPoolRelevancy")) { InOutValue = FMath::Clamp(InOutValue, 0.0f, 100.0f); return; }
 
         if (FullKey == TEXT("PPV.LumenSceneLightingQuality")) { InOutValue = FMath::Clamp(InOutValue, 0.0f, 8.0f); return; }
         if (FullKey == TEXT("PPV.LumenSceneDetail")) { InOutValue = FMath::Clamp(InOutValue, 0.0f, 32.0f); return; }
@@ -202,6 +279,7 @@
         if (FullKey == TEXT("DebugHub.MaxEvents")) { InOutValue = FMath::Clamp(InOutValue, 64, 20000); return; }
         if (FullKey == TEXT("DebugHub.MaxCopiedHitchSnapshots")) { InOutValue = FMath::Clamp(InOutValue, 0, 50); return; }
         if (FullKey == TEXT("Visualization.ModeSwitchCooldownMs")) { InOutValue = FMath::Clamp(InOutValue, 0, 5000); return; }
+        if (FullKey == TEXT("Rendering.MaximumActiveLights")) { InOutValue = FMath::Clamp(InOutValue, 0, 5000); return; }
         if (FullKey == TEXT("PPV.LumenRayLightingMode")) { InOutValue = FMath::Clamp(InOutValue, 0, 1); return; }
         if (FullKey == TEXT("PPV.LumenFrontLayerTranslucencyReflections")) { InOutValue = FMath::Clamp(InOutValue, 0, 1); return; }
         if (FullKey == TEXT("PPV.LumenMaxReflectionBounces")) { InOutValue = FMath::Clamp(InOutValue, 1, 64); return; }
@@ -221,7 +299,9 @@
         SanitizeFloatSettingValue(TEXT("PPV"), TEXT("LumenSurfaceCacheResolution"), Config.LumenSurfaceCacheResolution);
         SanitizeFloatSettingValue(TEXT("PPV"), TEXT("LumenReflectionQuality"), Config.LumenReflectionQuality);
         SanitizeFloatSettingValue(TEXT("PPV"), TEXT("IndirectLightingIntensity"), Config.IndirectLightingIntensity);
+        SanitizeFloatSettingValue(TEXT("Rendering"), TEXT("LightPoolRelevancy"), Config.LightPoolRelevancy);
 
+        SanitizeIntSettingValue(TEXT("Rendering"), TEXT("MaximumActiveLights"), Config.MaximumActiveLights);
         SanitizeIntSettingValue(TEXT("PPV"), TEXT("LumenRayLightingMode"), Config.LumenRayLightingMode);
         SanitizeIntSettingValue(TEXT("PPV"), TEXT("LumenFrontLayerTranslucencyReflections"), Config.LumenFrontLayerTranslucencyReflections);
         SanitizeIntSettingValue(TEXT("PPV"), TEXT("LumenMaxReflectionBounces"), Config.LumenMaxReflectionBounces);
@@ -232,10 +312,13 @@
         Config.IndirectLightingColor.A = FMath::Clamp(Config.IndirectLightingColor.A, 0.0f, 1.0f);
     }
 
-    static void LoadStringRemapSection(const FString& ConfigPath, const TCHAR* SectionName, TMap<FString, FString>& OutMap, TMap<FString, FString>* OutNormalizedMap = nullptr) {
+    static void LoadStringRemapSection(const FString& ConfigPath, const TCHAR* SectionName, TMap<FString, FString>& OutMap, TMap<FString, FString>* OutNormalizedMap = nullptr, FRemapLoadStats* OutStats = nullptr) {
         OutMap.Reset();
         if (OutNormalizedMap) {
             OutNormalizedMap->Reset();
+        }
+        if (OutStats) {
+            *OutStats = FRemapLoadStats{};
         }
         if (!GConfig || !SectionName) {
             return;
@@ -245,19 +328,37 @@
         if (!GConfig->GetSection(SectionName, Entries, ConfigPath)) {
             return;
         }
+        if (OutStats) {
+            OutStats->bSectionFound = true;
+            OutStats->EntryCount = Entries.Num();
+        }
 
         for (const FString& Entry : Entries) {
             FString Source;
             FString Target;
             if (Entry.Split(TEXT("="), &Source, &Target, ESearchCase::CaseSensitive)) {
-                Source = NormalizeRemapPath(Source);
-                Target = NormalizeRemapPath(Target);
+                Source = CanonicalizeRemapAssetPath(Source);
+                Target = CanonicalizeRemapAssetPath(Target);
                 if (!Source.IsEmpty() && !Target.IsEmpty()) {
                     OutMap.Add(Source, Target);
                     if (OutNormalizedMap) {
                         OutNormalizedMap->Add(Source.ToLower(), Target);
+                        int32 DotIndex = INDEX_NONE;
+                        if (Source.FindLastChar(TEXT('.'), DotIndex) && DotIndex > 0) {
+                            const FString PackagePath = Source.Left(DotIndex);
+                            if (!PackagePath.IsEmpty()) {
+                                OutNormalizedMap->Add(PackagePath.ToLower(), Target);
+                            }
+                        }
                     }
+                    if (OutStats) {
+                        ++OutStats->LoadedCount;
+                    }
+                } else if (OutStats) {
+                    ++OutStats->InvalidCount;
                 }
+            } else if (OutStats) {
+                ++OutStats->InvalidCount;
             }
         }
     }
@@ -267,75 +368,145 @@
     }
 
     static void LoadPersistentPPVConfig(FPPVConfig& Config) {
-        FTajsGraphModule::GetBoolSetting(TEXT("Debug"), TEXT("EnableLogging"), Config.bEnableLogging);
-        FTajsGraphModule::GetBoolSetting(TEXT("Debug"), TEXT("EnableDebugLogging"), Config.bEnableDebugLogging);
-        FTajsGraphModule::GetBoolSetting(TEXT("Debug"), TEXT("PollExternalConfigChanges"), Config.bPollExternalConfigChanges);
+        TajsGraphSmlSettings::GetBool(TEXT("Debug"), TEXT("EnableLogging"), Config.bEnableLogging);
+        TajsGraphSmlSettings::GetBool(TEXT("Debug"), TEXT("EnableDebugLogging"), Config.bEnableDebugLogging);
+        TajsGraphSmlSettings::GetBool(TEXT("Debug"), TEXT("PollExternalConfigChanges"), Config.bPollExternalConfigChanges);
 
-        FTajsGraphModule::GetBoolSetting(TEXT("PPV"), TEXT("Enabled"), Config.bEnabled);
-        FTajsGraphModule::GetBoolSetting(TEXT("PPV"), TEXT("OverrideLumenMethods"), Config.bOverrideLumenMethods);
-        FTajsGraphModule::GetBoolSetting(TEXT("PPV"), TEXT("OverrideLumenValues"), Config.bOverrideLumenValues);
-        FTajsGraphModule::GetBoolSetting(TEXT("PPV"), TEXT("OverrideLumenRayLightingMode"), Config.bOverrideLumenRayLightingMode);
-        FTajsGraphModule::GetBoolSetting(TEXT("PPV"), TEXT("OverrideLumenFrontLayerTranslucencyReflections"), Config.bOverrideLumenFrontLayerTranslucencyReflections);
-        FTajsGraphModule::GetBoolSetting(TEXT("PPV"), TEXT("OverrideLumenMaxReflectionBounces"), Config.bOverrideLumenMaxReflectionBounces);
-        FTajsGraphModule::GetBoolSetting(TEXT("Instancing"), TEXT("ForceInstancing"), Config.bForceInstancing);
-        FTajsGraphModule::GetBoolSetting(TEXT("Instancing"), TEXT("ForceLumenInstancing"), Config.bForceLumenInstancing);
-        FTajsGraphModule::GetBoolSetting(TEXT("Nanite"), TEXT("ForceNanite"), Config.bForceNanite);
-        FTajsGraphModule::GetBoolSetting(TEXT("Nanite"), TEXT("ForceNaniteForMasked"), Config.bForceNaniteForMasked);
-        FTajsGraphModule::GetBoolSetting(TEXT("Foliage"), TEXT("FixBuildableFoliage"), Config.bFixBuildableFoliage);
-        const bool bHasSmlRemapFlag = FTajsGraphModule::GetBoolSetting(TEXT("Remap"), TEXT("EnableAssetRemap"), Config.bEnableAssetRemap);
+        TajsGraphSmlSettings::GetBool(TEXT("PPV"), TEXT("Enabled"), Config.bEnabled);
+        TajsGraphSmlSettings::GetBool(TEXT("PPV"), TEXT("OverrideLumenMethods"), Config.bOverrideLumenMethods);
+        TajsGraphSmlSettings::GetBool(TEXT("PPV"), TEXT("OverrideLumenValues"), Config.bOverrideLumenValues);
+        TajsGraphSmlSettings::GetBool(TEXT("PPV"), TEXT("OverrideLumenRayLightingMode"), Config.bOverrideLumenRayLightingMode);
+        TajsGraphSmlSettings::GetBool(TEXT("PPV"), TEXT("OverrideLumenFrontLayerTranslucencyReflections"), Config.bOverrideLumenFrontLayerTranslucencyReflections);
+        TajsGraphSmlSettings::GetBool(TEXT("PPV"), TEXT("OverrideLumenMaxReflectionBounces"), Config.bOverrideLumenMaxReflectionBounces);
+        TajsGraphSmlSettings::GetBool(TEXT("Instancing"), TEXT("ForceInstancing"), Config.bForceInstancing);
+        TajsGraphSmlSettings::GetBool(TEXT("Instancing"), TEXT("ForceLumenInstancing"), Config.bForceLumenInstancing);
+        TajsGraphSmlSettings::GetBool(TEXT("Nanite"), TEXT("ForceNanite"), Config.bForceNanite);
+        TajsGraphSmlSettings::GetBool(TEXT("Nanite"), TEXT("ForceNaniteForMasked"), Config.bForceNaniteForMasked);
+        TajsGraphSmlSettings::GetBool(TEXT("Foliage"), TEXT("FixBuildableFoliage"), Config.bFixBuildableFoliage);
+        const bool bHasSmlRemapFlag = TajsGraphSmlSettings::GetBool(TEXT("Remap"), TEXT("EnableAssetRemap"), Config.bEnableAssetRemap);
 
         const FString StaticConfigPath = GetBundledSettingsConfigPath();
         if (!bHasSmlRemapFlag && GConfig && !StaticConfigPath.IsEmpty()) {
             GConfig->GetBool(TEXT("Remap"), TEXT("EnableAssetRemap"), Config.bEnableAssetRemap, StaticConfigPath);
         }
-        LoadStringRemapSection(StaticConfigPath, TEXT("MeshRemap"), Config.MeshRemap, &Config.MeshRemapNormalized);
-        LoadStringRemapSection(StaticConfigPath, TEXT("MaterialRemap"), Config.MaterialRemap, &Config.MaterialRemapNormalized);
+        FRemapLoadStats MeshRemapStats;
+        FRemapLoadStats MaterialRemapStats;
+        LoadStringRemapSection(StaticConfigPath, TEXT("MeshRemap"), Config.MeshRemap, &Config.MeshRemapNormalized, &MeshRemapStats);
+        LoadStringRemapSection(StaticConfigPath, TEXT("MaterialRemap"), Config.MaterialRemap, &Config.MaterialRemapNormalized, &MaterialRemapStats);
 
-        FTajsGraphModule::GetFloatSetting(TEXT("PPV"), TEXT("LumenSceneLightingQuality"), Config.LumenSceneLightingQuality);
-        FTajsGraphModule::GetFloatSetting(TEXT("PPV"), TEXT("LumenSceneDetail"), Config.LumenSceneDetail);
-        FTajsGraphModule::GetFloatSetting(TEXT("PPV"), TEXT("LumenSceneViewDistance"), Config.LumenSceneViewDistance);
-        FTajsGraphModule::GetFloatSetting(TEXT("PPV"), TEXT("LumenSceneLightingUpdateSpeed"), Config.LumenSceneLightingUpdateSpeed);
-        FTajsGraphModule::GetFloatSetting(TEXT("PPV"), TEXT("LumenFinalGatherQuality"), Config.LumenFinalGatherQuality);
-        FTajsGraphModule::GetFloatSetting(TEXT("PPV"), TEXT("LumenFinalGatherLightingUpdateSpeed"), Config.LumenFinalGatherLightingUpdateSpeed);
-        FTajsGraphModule::GetFloatSetting(TEXT("PPV"), TEXT("LumenMaxTraceDistance"), Config.LumenMaxTraceDistance);
-        FTajsGraphModule::GetFloatSetting(TEXT("PPV"), TEXT("LumenDiffuseColorBoost"), Config.LumenDiffuseColorBoost);
-        FTajsGraphModule::GetFloatSetting(TEXT("PPV"), TEXT("LumenSkylightLeaking"), Config.LumenSkylightLeaking);
-        FTajsGraphModule::GetFloatSetting(TEXT("PPV"), TEXT("LumenFullSkylightLeakingDistance"), Config.LumenFullSkylightLeakingDistance);
-        FTajsGraphModule::GetFloatSetting(TEXT("PPV"), TEXT("LumenSurfaceCacheResolution"), Config.LumenSurfaceCacheResolution);
-        FTajsGraphModule::GetFloatSetting(TEXT("PPV"), TEXT("LumenReflectionQuality"), Config.LumenReflectionQuality);
-        FTajsGraphModule::GetBoolSetting(TEXT("PPV"), TEXT("OverrideIndirectLightingColor"), Config.bOverrideIndirectLightingColor);
-        FTajsGraphModule::GetBoolSetting(TEXT("PPV"), TEXT("OverrideIndirectLightingIntensity"), Config.bOverrideIndirectLightingIntensity);
-        FTajsGraphModule::GetBoolSetting(TEXT("Shadows"), TEXT("VirtualShadowMaps"), Config.bVirtualShadowMaps);
-        FTajsGraphModule::GetBoolSetting(TEXT("Shadows"), TEXT("VSMFarShadowCulling"), Config.bVSMFarShadowCulling);
-        FTajsGraphModule::GetBoolSetting(TEXT("Shadows"), TEXT("CapsuleShadows"), Config.bCapsuleShadows);
-        FTajsGraphModule::GetBoolSetting(TEXT("Shadows"), TEXT("CascadedShadows"), Config.bCascadedShadows);
-        FTajsGraphModule::GetBoolSetting(TEXT("Shadows"), TEXT("ContactShadows"), Config.bContactShadows);
-        FTajsGraphModule::GetBoolSetting(TEXT("Shadows"), TEXT("DistanceFieldShadows"), Config.bDistanceFieldShadows);
+        if (GConfig && !StaticConfigPath.IsEmpty())
+        {
+            TArray<FString> LegacyRemapEntries;
+            const bool bHasLegacyRemapSection = GConfig->GetSection(TEXT("Remap"), LegacyRemapEntries, StaticConfigPath);
+            int32 LegacyKeyValueEntries = 0;
+            for (const FString& Entry : LegacyRemapEntries)
+            {
+                FString Source;
+                FString Target;
+                if (Entry.Split(TEXT("="), &Source, &Target, ESearchCase::CaseSensitive))
+                {
+                    if (!Source.TrimStartAndEnd().Equals(TEXT("EnableAssetRemap"), ESearchCase::IgnoreCase))
+                    {
+                        ++LegacyKeyValueEntries;
+                    }
+                }
+            }
 
-        FTajsGraphModule::GetBoolSetting(TEXT("Lumen"), TEXT("Lumen"), Config.bLumen);
-        FTajsGraphModule::GetBoolSetting(TEXT("Lumen"), TEXT("AsyncIndirectLighting"), Config.bAsyncIndirectLighting);
-        FTajsGraphModule::GetBoolSetting(TEXT("Lumen"), TEXT("AsyncReflections"), Config.bAsyncReflections);
-        FTajsGraphModule::GetBoolSetting(TEXT("Lumen"), TEXT("AsyncSceneLighting"), Config.bAsyncSceneLighting);
-        FTajsGraphModule::GetBoolSetting(TEXT("Lumen"), TEXT("LumenScreenTraces"), Config.bLumenScreenTraces);
-        FTajsGraphModule::GetBoolSetting(TEXT("Lumen"), TEXT("UnoptimizedLumen"), Config.bUnoptimizedLumen);
-        FTajsGraphModule::GetBoolSetting(TEXT("Lumen"), TEXT("TranslucentSurfaceReflections"), Config.bTranslucentSurfaceReflections);
-        FTajsGraphModule::GetBoolSetting(TEXT("Lumen"), TEXT("LumenReflectionsScreenSpaceReconstruction"), Config.bLumenReflectionsScreenSpaceReconstruction);
+            const FString RemapSummary = FString::Printf(
+                TEXT("bundled=%s|exists=%d|enabled=%d|meshFound=%d|meshEntries=%d|meshLoaded=%d|meshInvalid=%d|materialFound=%d|materialEntries=%d|materialLoaded=%d|materialInvalid=%d|legacy=%d"),
+                *StaticConfigPath,
+                FPaths::FileExists(StaticConfigPath) ? 1 : 0,
+                Config.bEnableAssetRemap ? 1 : 0,
+                MeshRemapStats.bSectionFound ? 1 : 0,
+                MeshRemapStats.EntryCount,
+                MeshRemapStats.LoadedCount,
+                MeshRemapStats.InvalidCount,
+                MaterialRemapStats.bSectionFound ? 1 : 0,
+                MaterialRemapStats.EntryCount,
+                MaterialRemapStats.LoadedCount,
+                MaterialRemapStats.InvalidCount,
+                LegacyKeyValueEntries);
 
-        FTajsGraphModule::GetBoolSetting(TEXT("Rendering"), TEXT("FogEnabled"), Config.bFogEnabled);
-        FTajsGraphModule::GetBoolSetting(TEXT("Rendering"), TEXT("SkyAtmosphereEnabled"), Config.bSkyAtmosphereEnabled);
-        FTajsGraphModule::GetBoolSetting(TEXT("Rendering"), TEXT("GPUOcclusionQueries"), Config.bGPUOcclusionQueries);
-        FTajsGraphModule::GetBoolSetting(TEXT("Rendering"), TEXT("EnhancedAutoExposure"), Config.bEnhancedAutoExposure);
-        FTajsGraphModule::GetBoolSetting(TEXT("Rendering"), TEXT("EnableDLSSFG"), Config.bEnableDLSSFG);
-        FTajsGraphModule::GetBoolSetting(TEXT("Rendering"), TEXT("EnableReflex"), Config.bEnableReflex);
-        FTajsGraphModule::GetBoolSetting(TEXT("Rendering"), TEXT("ForceHighestMipOnUI"), Config.bForceHighestMipOnUI);
-        FTajsGraphModule::GetBoolSetting(TEXT("Rendering"), TEXT("FullyLoadUsedTextures"), Config.bFullyLoadUsedTextures);
-        FTajsGraphModule::GetBoolSetting(TEXT("Rendering"), TEXT("TickAllowAsyncTickCleanup"), Config.bTickAllowAsyncTickCleanup);
-        FTajsGraphModule::GetBoolSetting(TEXT("Rendering"), TEXT("TickAllowAsyncTickDispatch"), Config.bTickAllowAsyncTickDispatch);
+            static FString LastRemapSummary;
+            if (LastRemapSummary != RemapSummary)
+            {
+                LastRemapSummary = RemapSummary;
 
-        FTajsGraphModule::GetFloatSetting(TEXT("PPV"), TEXT("IndirectLightingIntensity"), Config.IndirectLightingIntensity);
+                UE_LOG(LogTajsGraph, Display, TEXT("[TajsGraph][Remap] Bundled config path=%s exists=%s"),
+                    *StaticConfigPath,
+                    FPaths::FileExists(StaticConfigPath) ? TEXT("true") : TEXT("false"));
+                UE_LOG(LogTajsGraph, Display, TEXT("[TajsGraph][Remap] MeshRemap: found=%s entries=%d loaded=%d invalid=%d"),
+                    MeshRemapStats.bSectionFound ? TEXT("true") : TEXT("false"),
+                    MeshRemapStats.EntryCount,
+                    MeshRemapStats.LoadedCount,
+                    MeshRemapStats.InvalidCount);
+                UE_LOG(LogTajsGraph, Display, TEXT("[TajsGraph][Remap] MaterialRemap: found=%s entries=%d loaded=%d invalid=%d"),
+                    MaterialRemapStats.bSectionFound ? TEXT("true") : TEXT("false"),
+                    MaterialRemapStats.EntryCount,
+                    MaterialRemapStats.LoadedCount,
+                    MaterialRemapStats.InvalidCount);
+
+                if (LegacyKeyValueEntries > 0)
+                {
+                    UE_LOG(LogTajsGraph, Warning, TEXT("[TajsGraph][Remap] Found %d legacy remap entries under [Remap]. Move key/value pairs into [MeshRemap] or [MaterialRemap]."),
+                        LegacyKeyValueEntries);
+                }
+
+                if (Config.bEnableAssetRemap && !MeshRemapStats.bSectionFound && !MaterialRemapStats.bSectionFound)
+                {
+                    UE_LOG(LogTajsGraph, Warning, TEXT("[TajsGraph][Remap] Asset remap is enabled but neither [MeshRemap] nor [MaterialRemap] was found in %s"),
+                        *StaticConfigPath);
+                }
+            }
+        }
+
+        TajsGraphSmlSettings::GetFloat(TEXT("PPV"), TEXT("LumenSceneLightingQuality"), Config.LumenSceneLightingQuality);
+        TajsGraphSmlSettings::GetFloat(TEXT("PPV"), TEXT("LumenSceneDetail"), Config.LumenSceneDetail);
+        TajsGraphSmlSettings::GetFloat(TEXT("PPV"), TEXT("LumenSceneViewDistance"), Config.LumenSceneViewDistance);
+        TajsGraphSmlSettings::GetFloat(TEXT("PPV"), TEXT("LumenSceneLightingUpdateSpeed"), Config.LumenSceneLightingUpdateSpeed);
+        TajsGraphSmlSettings::GetFloat(TEXT("PPV"), TEXT("LumenFinalGatherQuality"), Config.LumenFinalGatherQuality);
+        TajsGraphSmlSettings::GetFloat(TEXT("PPV"), TEXT("LumenFinalGatherLightingUpdateSpeed"), Config.LumenFinalGatherLightingUpdateSpeed);
+        TajsGraphSmlSettings::GetFloat(TEXT("PPV"), TEXT("LumenMaxTraceDistance"), Config.LumenMaxTraceDistance);
+        TajsGraphSmlSettings::GetFloat(TEXT("PPV"), TEXT("LumenDiffuseColorBoost"), Config.LumenDiffuseColorBoost);
+        TajsGraphSmlSettings::GetFloat(TEXT("PPV"), TEXT("LumenSkylightLeaking"), Config.LumenSkylightLeaking);
+        TajsGraphSmlSettings::GetFloat(TEXT("PPV"), TEXT("LumenFullSkylightLeakingDistance"), Config.LumenFullSkylightLeakingDistance);
+        TajsGraphSmlSettings::GetFloat(TEXT("PPV"), TEXT("LumenSurfaceCacheResolution"), Config.LumenSurfaceCacheResolution);
+        TajsGraphSmlSettings::GetFloat(TEXT("PPV"), TEXT("LumenReflectionQuality"), Config.LumenReflectionQuality);
+        TajsGraphSmlSettings::GetBool(TEXT("PPV"), TEXT("OverrideIndirectLightingColor"), Config.bOverrideIndirectLightingColor);
+        TajsGraphSmlSettings::GetBool(TEXT("PPV"), TEXT("OverrideIndirectLightingIntensity"), Config.bOverrideIndirectLightingIntensity);
+        TajsGraphSmlSettings::GetBool(TEXT("Shadows"), TEXT("VirtualShadowMaps"), Config.bVirtualShadowMaps);
+        TajsGraphSmlSettings::GetBool(TEXT("Shadows"), TEXT("VSMFarShadowCulling"), Config.bVSMFarShadowCulling);
+        TajsGraphSmlSettings::GetBool(TEXT("Shadows"), TEXT("CapsuleShadows"), Config.bCapsuleShadows);
+        TajsGraphSmlSettings::GetBool(TEXT("Shadows"), TEXT("CascadedShadows"), Config.bCascadedShadows);
+        TajsGraphSmlSettings::GetBool(TEXT("Shadows"), TEXT("ContactShadows"), Config.bContactShadows);
+        TajsGraphSmlSettings::GetBool(TEXT("Shadows"), TEXT("DistanceFieldShadows"), Config.bDistanceFieldShadows);
+
+        TajsGraphSmlSettings::GetBool(TEXT("Lumen"), TEXT("Lumen"), Config.bLumen);
+        TajsGraphSmlSettings::GetBool(TEXT("Lumen"), TEXT("AsyncIndirectLighting"), Config.bAsyncIndirectLighting);
+        TajsGraphSmlSettings::GetBool(TEXT("Lumen"), TEXT("AsyncReflections"), Config.bAsyncReflections);
+        TajsGraphSmlSettings::GetBool(TEXT("Lumen"), TEXT("AsyncSceneLighting"), Config.bAsyncSceneLighting);
+        TajsGraphSmlSettings::GetBool(TEXT("Lumen"), TEXT("LumenScreenTraces"), Config.bLumenScreenTraces);
+        TajsGraphSmlSettings::GetBool(TEXT("Lumen"), TEXT("UnoptimizedLumen"), Config.bUnoptimizedLumen);
+        TajsGraphSmlSettings::GetBool(TEXT("Lumen"), TEXT("TranslucentSurfaceReflections"), Config.bTranslucentSurfaceReflections);
+        TajsGraphSmlSettings::GetBool(TEXT("Lumen"), TEXT("LumenReflectionsScreenSpaceReconstruction"), Config.bLumenReflectionsScreenSpaceReconstruction);
+
+        TajsGraphSmlSettings::GetBool(TEXT("Rendering"), TEXT("FogEnabled"), Config.bFogEnabled);
+        TajsGraphSmlSettings::GetBool(TEXT("Rendering"), TEXT("SkyAtmosphereEnabled"), Config.bSkyAtmosphereEnabled);
+        TajsGraphSmlSettings::GetBool(TEXT("Rendering"), TEXT("GPUOcclusionQueries"), Config.bGPUOcclusionQueries);
+        TajsGraphSmlSettings::GetBool(TEXT("Rendering"), TEXT("EnhancedAutoExposure"), Config.bEnhancedAutoExposure);
+        TajsGraphSmlSettings::GetBool(TEXT("Rendering"), TEXT("EnableDLSSFG"), Config.bEnableDLSSFG);
+        TajsGraphSmlSettings::GetBool(TEXT("Rendering"), TEXT("EnableReflex"), Config.bEnableReflex);
+        TajsGraphSmlSettings::GetBool(TEXT("Rendering"), TEXT("ForceHighestMipOnUI"), Config.bForceHighestMipOnUI);
+        TajsGraphSmlSettings::GetBool(TEXT("Rendering"), TEXT("FullyLoadUsedTextures"), Config.bFullyLoadUsedTextures);
+        TajsGraphSmlSettings::GetFloat(TEXT("Rendering"), TEXT("LightPoolRelevancy"), Config.LightPoolRelevancy);
+        TajsGraphSmlSettings::GetInt(TEXT("Rendering"), TEXT("MaximumActiveLights"), Config.MaximumActiveLights);
+        TajsGraphSmlSettings::GetBool(TEXT("Rendering"), TEXT("TickAllowAsyncTickCleanup"), Config.bTickAllowAsyncTickCleanup);
+        TajsGraphSmlSettings::GetBool(TEXT("Rendering"), TEXT("TickAllowAsyncTickDispatch"), Config.bTickAllowAsyncTickDispatch);
+
+        TajsGraphSmlSettings::GetFloat(TEXT("PPV"), TEXT("IndirectLightingIntensity"), Config.IndirectLightingIntensity);
 
         FString IndirectLightingColorString;
-        if (FTajsGraphModule::GetStringSetting(TEXT("PPV"), TEXT("IndirectLightingColor"), IndirectLightingColorString)) {
+        if (TajsGraphSmlSettings::GetString(TEXT("PPV"), TEXT("IndirectLightingColor"), IndirectLightingColorString)) {
             FLinearColor ParsedColor;
             if (TryParseLinearColorValue(IndirectLightingColorString, ParsedColor)) {
                 Config.IndirectLightingColor = ParsedColor;
@@ -343,30 +514,33 @@
                 UE_LOG(LogTajsGraph, Warning, TEXT("[TajsGraph] Invalid PPV.IndirectLightingColor value in SML config: %s"), *IndirectLightingColorString);
             }
         }
-        FTajsGraphModule::GetIntSetting(TEXT("PPV"), TEXT("LumenRayLightingMode"), Config.LumenRayLightingMode);
-        FTajsGraphModule::GetIntSetting(TEXT("PPV"), TEXT("LumenFrontLayerTranslucencyReflections"), Config.LumenFrontLayerTranslucencyReflections);
-        FTajsGraphModule::GetIntSetting(TEXT("PPV"), TEXT("LumenMaxReflectionBounces"), Config.LumenMaxReflectionBounces);
+        TajsGraphSmlSettings::GetInt(TEXT("PPV"), TEXT("LumenRayLightingMode"), Config.LumenRayLightingMode);
+        TajsGraphSmlSettings::GetInt(TEXT("PPV"), TEXT("LumenFrontLayerTranslucencyReflections"), Config.LumenFrontLayerTranslucencyReflections);
+        TajsGraphSmlSettings::GetInt(TEXT("PPV"), TEXT("LumenMaxReflectionBounces"), Config.LumenMaxReflectionBounces);
 
         ValidateAndClampRuntimeConfig(Config);
     }
 
     static bool TryGetRemapTarget(const TMap<FString, FString>& RemapMap, const TMap<FString, FString>& NormalizedRemapMap, const FString& SourcePath, FString& OutTargetPath) {
-        const FString NormalizedSource = NormalizeRemapPath(SourcePath);
+        TArray<FString> LookupKeys;
+        BuildRemapLookupKeys(SourcePath, LookupKeys);
 
-        if (const FString* DirectMatch = RemapMap.Find(NormalizedSource)) {
-            OutTargetPath = *DirectMatch;
-            return true;
-        }
-
-        if (const FString* LowercaseMatch = NormalizedRemapMap.Find(NormalizedSource.ToLower())) {
-            OutTargetPath = *LowercaseMatch;
-            return true;
-        }
-
-        for (const TPair<FString, FString>& Pair : RemapMap) {
-            if (NormalizedSource.Equals(Pair.Key, ESearchCase::IgnoreCase)) {
-                OutTargetPath = Pair.Value;
+        for (const FString& LookupKey : LookupKeys) {
+            if (const FString* DirectMatch = RemapMap.Find(LookupKey)) {
+                OutTargetPath = *DirectMatch;
                 return true;
+            }
+
+            if (const FString* LowercaseMatch = NormalizedRemapMap.Find(LookupKey.ToLower())) {
+                OutTargetPath = *LowercaseMatch;
+                return true;
+            }
+
+            for (const TPair<FString, FString>& Pair : RemapMap) {
+                if (LookupKey.Equals(Pair.Key, ESearchCase::IgnoreCase)) {
+                    OutTargetPath = Pair.Value;
+                    return true;
+                }
             }
         }
 
@@ -512,49 +686,6 @@
             UE_LOG(LogTajsGraph, Log, TEXT("[TajsGraph] Applying runtime CVar overrides (debug=%s)"), Config.bEnableDebugLogging ? TEXT("true") : TEXT("false"));
         }
 
-        // Baseline commands from Blueprint startup sequence.
-        SetConsoleInt(TEXT("r.AOGlobalDistanceField.FastCameraMode"), 0);
-        SetConsoleFloat(TEXT("r.DFShadow.TwoSidedMeshDistanceBiasScale"), 0.2f);
-
-        // Lumen enable/disable command chain.
-        SetConsoleInt(TEXT("r.ReflectionMethod"), Config.bLumen ? 1 : 0);
-        SetConsoleInt(TEXT("r.DynamicGlobalIlluminationMethod"), Config.bLumen ? 1 : 0);
-        SetConsoleInt(TEXT("r.Lumen.ScreenProbeGather"), Config.bLumen ? 1 : 0);
-        SetConsoleInt(TEXT("r.Lumen.DiffuseIndirect.Allow"), Config.bLumen ? 1 : 0);
-        SetConsoleInt(TEXT("r.Lumen.Reflections.Allow"), Config.bLumen ? 1 : 0);
-
-        SetConsoleBool(TEXT("r.Shadow.Virtual.Enable"), Config.bVirtualShadowMaps);
-        SetConsoleBool(TEXT("r.Shadow.Virtual.UseFarShadowCulling"), Config.bVSMFarShadowCulling);
-        SetConsoleBool(TEXT("r.Lumen.DiffuseIndirect.AsyncCompute"), Config.bAsyncIndirectLighting);
-        SetConsoleBool(TEXT("r.Lumen.Reflections.AsyncCompute"), Config.bAsyncReflections);
-        SetConsoleBool(TEXT("r.LumenScene.Lighting.AsyncCompute"), Config.bAsyncSceneLighting);
-        SetConsoleBool(TEXT("r.Lumen.Reflections.ScreenTraces"), Config.bLumenScreenTraces);
-        SetConsoleBool(TEXT("r.Lumen.Reflections.ScreenSpaceReconstruction"), Config.bLumenReflectionsScreenSpaceReconstruction);
-        SetConsoleBool(TEXT("r.Lumen.TranslucencyReflections.FrontLayer.Enable"), Config.bTranslucentSurfaceReflections);
-        SetConsoleBool(TEXT("r.Lumen.TranslucencyReflections.FrontLayer.EnableForProject"), Config.bTranslucentSurfaceReflections);
-
-        SetConsoleBool(TEXT("r.CapsuleShadows"), Config.bCapsuleShadows);
-        SetConsoleBool(TEXT("r.CapsuleDirectShadows"), Config.bCapsuleShadows);
-        SetConsoleBool(TEXT("r.CapsuleIndirectShadows"), Config.bCapsuleShadows);
-        SetConsoleInt(TEXT("r.Shadow.CSM.MaxCascades"), Config.bCascadedShadows ? 4 : 0);
-        SetConsoleInt(TEXT("r.Shadow.CSMCaching"), Config.bCascadedShadows ? 4 : 0);
-        SetConsoleInt(TEXT("r.Shadow.MaxCSMResolution"), Config.bCascadedShadows ? 2048 : 0);
-        SetConsoleBool(TEXT("r.ContactShadows"), Config.bContactShadows);
-        SetConsoleBool(TEXT("r.DistanceFieldShadowing"), Config.bDistanceFieldShadows);
-        SetConsoleBool(TEXT("r.Lumen.ScreenProbeGather.ReferenceMode"), Config.bUnoptimizedLumen);
-
-        SetConsoleBool(TEXT("r.Fog"), Config.bFogEnabled);
-        SetConsoleBool(TEXT("r.SkyAtmosphere"), Config.bSkyAtmosphereEnabled);
-        SetConsoleBool(TEXT("D3D12.InsertOuterOcclusionQuery"), Config.bGPUOcclusionQueries);
-        SetConsoleBool(TEXT("r.AutoExposure.IgnoreMaterials"), Config.bEnhancedAutoExposure);
-        SetConsoleBool(TEXT("r.AutoExposure.IgnoreMaterials.UsePrecalculatedIlluminance"), Config.bEnhancedAutoExposure);
-        SetConsoleFloat(TEXT("r.AutoExposure.IgnoreMaterials.LuminanceScale"), Config.bEnhancedAutoExposure ? 0.25f : 0.18f);
-        SetConsoleBool(TEXT("r.Streamline.DLSSG.Enable"), Config.bEnableDLSSFG);
-        SetConsoleBool(TEXT("t.Streamline.Reflex.Enable"), Config.bEnableReflex);
-        SetConsoleBool(TEXT("r.ForceHighestMipOnUITextures"), Config.bForceHighestMipOnUI);
-        SetConsoleBool(TEXT("r.Streaming.FullyLoadUsedTextures"), Config.bFullyLoadUsedTextures);
-        SetConsoleBool(TEXT("tick.AllowAsyncTickCleanup"), Config.bTickAllowAsyncTickCleanup);
-        SetConsoleBool(TEXT("tick.AllowAsyncTickDispatch"), Config.bTickAllowAsyncTickDispatch);
         bLoggedMissingCVarWarnings = true;
     }
 
@@ -564,8 +695,21 @@
         }
 
         const double NowSeconds = FPlatformTime::Seconds();
-        if (!bForce && !bPendingRuntimeApply && (NowSeconds - GLastRuntimeConfigRefreshSeconds) < GConfigRefreshIntervalSeconds) {
-            return;
+        if (!bForce) {
+            FPPVConfig CurrentSnapshot;
+            {
+                FScopeLock Lock(&GPPVConfigMutex);
+                CurrentSnapshot = GPPVConfig;
+            }
+
+            // Only poll on the background cadence when explicit external config polling is enabled.
+            if (!CurrentSnapshot.bPollExternalConfigChanges) {
+                return;
+            }
+
+            if (!bPendingRuntimeApply && (NowSeconds - GLastRuntimeConfigRefreshSeconds) < GConfigRefreshIntervalSeconds) {
+                return;
+            }
         }
 
         GLastRuntimeConfigRefreshSeconds = NowSeconds;

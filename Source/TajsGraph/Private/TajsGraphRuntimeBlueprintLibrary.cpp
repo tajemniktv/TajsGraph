@@ -7,6 +7,7 @@
 #include "Engine/World.h"
 #include "EngineUtils.h"
 #include "TajsGraphModule.h"
+#include "TajsGraphSmlSettings.h"
 
 namespace
 {
@@ -134,7 +135,7 @@ void UTajsGraphRuntimeBlueprintLibrary::ApplyManagedPPVFromModConfig(const UObje
     }
 
     bool bEnabled = true;
-    FTajsGraphModule::GetBoolSetting(TEXT("PPV"), TEXT("Enabled"), bEnabled);
+    TajsGraphSmlSettings::GetBool(TEXT("PPV"), TEXT("Enabled"), bEnabled);
 
     FPostProcessSettings Settings;
     if (!bEnabled)
@@ -156,13 +157,13 @@ void UTajsGraphRuntimeBlueprintLibrary::ApplyManagedPPVFromModConfig(const UObje
     bool bOverrideIndirectLightingColor = false;
     bool bOverrideIndirectLightingIntensity = true;
 
-    FTajsGraphModule::GetBoolSetting(TEXT("PPV"), TEXT("OverrideLumenMethods"), bOverrideLumenMethods);
-    FTajsGraphModule::GetBoolSetting(TEXT("PPV"), TEXT("OverrideLumenValues"), bOverrideLumenValues);
-    FTajsGraphModule::GetBoolSetting(TEXT("PPV"), TEXT("OverrideLumenRayLightingMode"), bOverrideLumenRayLightingMode);
-    FTajsGraphModule::GetBoolSetting(TEXT("PPV"), TEXT("OverrideLumenFrontLayerTranslucencyReflections"), bOverrideLumenFrontLayerTranslucencyReflections);
-    FTajsGraphModule::GetBoolSetting(TEXT("PPV"), TEXT("OverrideLumenMaxReflectionBounces"), bOverrideLumenMaxReflectionBounces);
-    FTajsGraphModule::GetBoolSetting(TEXT("PPV"), TEXT("OverrideIndirectLightingColor"), bOverrideIndirectLightingColor);
-    FTajsGraphModule::GetBoolSetting(TEXT("PPV"), TEXT("OverrideIndirectLightingIntensity"), bOverrideIndirectLightingIntensity);
+    TajsGraphSmlSettings::GetBool(TEXT("PPV"), TEXT("OverrideLumenMethods"), bOverrideLumenMethods);
+    TajsGraphSmlSettings::GetBool(TEXT("PPV"), TEXT("OverrideLumenValues"), bOverrideLumenValues);
+    TajsGraphSmlSettings::GetBool(TEXT("PPV"), TEXT("OverrideLumenRayLightingMode"), bOverrideLumenRayLightingMode);
+    TajsGraphSmlSettings::GetBool(TEXT("PPV"), TEXT("OverrideLumenFrontLayerTranslucencyReflections"), bOverrideLumenFrontLayerTranslucencyReflections);
+    TajsGraphSmlSettings::GetBool(TEXT("PPV"), TEXT("OverrideLumenMaxReflectionBounces"), bOverrideLumenMaxReflectionBounces);
+    TajsGraphSmlSettings::GetBool(TEXT("PPV"), TEXT("OverrideIndirectLightingColor"), bOverrideIndirectLightingColor);
+    TajsGraphSmlSettings::GetBool(TEXT("PPV"), TEXT("OverrideIndirectLightingIntensity"), bOverrideIndirectLightingIntensity);
 
     if (bOverrideLumenMethods)
     {
@@ -177,58 +178,58 @@ void UTajsGraphRuntimeBlueprintLibrary::ApplyManagedPPVFromModConfig(const UObje
         float FloatValue = 0.0f;
 
         Settings.bOverride_LumenSceneLightingQuality = true;
-        FTajsGraphModule::GetFloatSetting(TEXT("PPV"), TEXT("LumenSceneLightingQuality"), FloatValue);
+        TajsGraphSmlSettings::GetFloat(TEXT("PPV"), TEXT("LumenSceneLightingQuality"), FloatValue);
         Settings.LumenSceneLightingQuality = FloatValue;
 
         Settings.bOverride_LumenSceneDetail = true;
-        FTajsGraphModule::GetFloatSetting(TEXT("PPV"), TEXT("LumenSceneDetail"), FloatValue);
+        TajsGraphSmlSettings::GetFloat(TEXT("PPV"), TEXT("LumenSceneDetail"), FloatValue);
         Settings.LumenSceneDetail = FloatValue;
 
         Settings.bOverride_LumenSceneViewDistance = true;
-        FTajsGraphModule::GetFloatSetting(TEXT("PPV"), TEXT("LumenSceneViewDistance"), FloatValue);
+        TajsGraphSmlSettings::GetFloat(TEXT("PPV"), TEXT("LumenSceneViewDistance"), FloatValue);
         Settings.LumenSceneViewDistance = FloatValue;
 
         Settings.bOverride_LumenSceneLightingUpdateSpeed = true;
-        FTajsGraphModule::GetFloatSetting(TEXT("PPV"), TEXT("LumenSceneLightingUpdateSpeed"), FloatValue);
+        TajsGraphSmlSettings::GetFloat(TEXT("PPV"), TEXT("LumenSceneLightingUpdateSpeed"), FloatValue);
         Settings.LumenSceneLightingUpdateSpeed = FloatValue;
 
         Settings.bOverride_LumenFinalGatherQuality = true;
-        FTajsGraphModule::GetFloatSetting(TEXT("PPV"), TEXT("LumenFinalGatherQuality"), FloatValue);
+        TajsGraphSmlSettings::GetFloat(TEXT("PPV"), TEXT("LumenFinalGatherQuality"), FloatValue);
         Settings.LumenFinalGatherQuality = FloatValue;
 
         Settings.bOverride_LumenFinalGatherLightingUpdateSpeed = true;
-        FTajsGraphModule::GetFloatSetting(TEXT("PPV"), TEXT("LumenFinalGatherLightingUpdateSpeed"), FloatValue);
+        TajsGraphSmlSettings::GetFloat(TEXT("PPV"), TEXT("LumenFinalGatherLightingUpdateSpeed"), FloatValue);
         Settings.LumenFinalGatherLightingUpdateSpeed = FloatValue;
 
         Settings.bOverride_LumenMaxTraceDistance = true;
-        FTajsGraphModule::GetFloatSetting(TEXT("PPV"), TEXT("LumenMaxTraceDistance"), FloatValue);
+        TajsGraphSmlSettings::GetFloat(TEXT("PPV"), TEXT("LumenMaxTraceDistance"), FloatValue);
         Settings.LumenMaxTraceDistance = FloatValue;
 
         Settings.bOverride_LumenDiffuseColorBoost = true;
-        FTajsGraphModule::GetFloatSetting(TEXT("PPV"), TEXT("LumenDiffuseColorBoost"), FloatValue);
+        TajsGraphSmlSettings::GetFloat(TEXT("PPV"), TEXT("LumenDiffuseColorBoost"), FloatValue);
         Settings.LumenDiffuseColorBoost = FloatValue;
 
         Settings.bOverride_LumenSkylightLeaking = true;
-        FTajsGraphModule::GetFloatSetting(TEXT("PPV"), TEXT("LumenSkylightLeaking"), FloatValue);
+        TajsGraphSmlSettings::GetFloat(TEXT("PPV"), TEXT("LumenSkylightLeaking"), FloatValue);
         Settings.LumenSkylightLeaking = FloatValue;
 
         Settings.bOverride_LumenFullSkylightLeakingDistance = true;
-        FTajsGraphModule::GetFloatSetting(TEXT("PPV"), TEXT("LumenFullSkylightLeakingDistance"), FloatValue);
+        TajsGraphSmlSettings::GetFloat(TEXT("PPV"), TEXT("LumenFullSkylightLeakingDistance"), FloatValue);
         Settings.LumenFullSkylightLeakingDistance = FloatValue;
 
         Settings.bOverride_LumenSurfaceCacheResolution = true;
-        FTajsGraphModule::GetFloatSetting(TEXT("PPV"), TEXT("LumenSurfaceCacheResolution"), FloatValue);
+        TajsGraphSmlSettings::GetFloat(TEXT("PPV"), TEXT("LumenSurfaceCacheResolution"), FloatValue);
         Settings.LumenSurfaceCacheResolution = FloatValue;
 
         Settings.bOverride_LumenReflectionQuality = true;
-        FTajsGraphModule::GetFloatSetting(TEXT("PPV"), TEXT("LumenReflectionQuality"), FloatValue);
+        TajsGraphSmlSettings::GetFloat(TEXT("PPV"), TEXT("LumenReflectionQuality"), FloatValue);
         Settings.LumenReflectionQuality = FloatValue;
     }
 
     if (bOverrideIndirectLightingColor)
     {
         FString ColorValue;
-        if (FTajsGraphModule::GetStringSetting(TEXT("PPV"), TEXT("IndirectLightingColor"), ColorValue))
+        if (TajsGraphSmlSettings::GetString(TEXT("PPV"), TEXT("IndirectLightingColor"), ColorValue))
         {
             FLinearColor ParsedColor = FLinearColor::White;
             if (TryParseConfigColor(ColorValue, ParsedColor))
@@ -242,7 +243,7 @@ void UTajsGraphRuntimeBlueprintLibrary::ApplyManagedPPVFromModConfig(const UObje
     if (bOverrideIndirectLightingIntensity)
     {
         float IntensityValue = 1.0f;
-        FTajsGraphModule::GetFloatSetting(TEXT("PPV"), TEXT("IndirectLightingIntensity"), IntensityValue);
+        TajsGraphSmlSettings::GetFloat(TEXT("PPV"), TEXT("IndirectLightingIntensity"), IntensityValue);
         Settings.bOverride_IndirectLightingIntensity = true;
         Settings.IndirectLightingIntensity = IntensityValue;
     }
@@ -250,7 +251,7 @@ void UTajsGraphRuntimeBlueprintLibrary::ApplyManagedPPVFromModConfig(const UObje
     if (bOverrideLumenRayLightingMode)
     {
         int32 IntValue = 0;
-        FTajsGraphModule::GetIntSetting(TEXT("PPV"), TEXT("LumenRayLightingMode"), IntValue);
+        TajsGraphSmlSettings::GetInt(TEXT("PPV"), TEXT("LumenRayLightingMode"), IntValue);
         Settings.bOverride_LumenRayLightingMode = true;
         Settings.LumenRayLightingMode = static_cast<ELumenRayLightingModeOverride>(IntValue);
     }
@@ -258,7 +259,7 @@ void UTajsGraphRuntimeBlueprintLibrary::ApplyManagedPPVFromModConfig(const UObje
     if (bOverrideLumenFrontLayerTranslucencyReflections)
     {
         int32 IntValue = 0;
-        FTajsGraphModule::GetIntSetting(TEXT("PPV"), TEXT("LumenFrontLayerTranslucencyReflections"), IntValue);
+        TajsGraphSmlSettings::GetInt(TEXT("PPV"), TEXT("LumenFrontLayerTranslucencyReflections"), IntValue);
         Settings.bOverride_LumenFrontLayerTranslucencyReflections = true;
         Settings.LumenFrontLayerTranslucencyReflections = IntValue;
     }
@@ -266,7 +267,7 @@ void UTajsGraphRuntimeBlueprintLibrary::ApplyManagedPPVFromModConfig(const UObje
     if (bOverrideLumenMaxReflectionBounces)
     {
         int32 IntValue = 1;
-        FTajsGraphModule::GetIntSetting(TEXT("PPV"), TEXT("LumenMaxReflectionBounces"), IntValue);
+        TajsGraphSmlSettings::GetInt(TEXT("PPV"), TEXT("LumenMaxReflectionBounces"), IntValue);
         Settings.bOverride_LumenMaxReflectionBounces = true;
         Settings.LumenMaxReflectionBounces = IntValue;
     }

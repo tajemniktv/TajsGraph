@@ -245,6 +245,13 @@ void FTajsGraphModule::StartupModule()
 	bLoggedCVarDelay = false;
 	LoadPersistentPPVConfig(GPPVConfig);
 	const FString ConfigPath = GetPPVConfigPath();
+	const FString BundledSettingsPath = GetBundledSettingsConfigPath();
+	UE_LOG(LogTajsGraph, Display, TEXT("[TajsGraph] Runtime config source=%s exists=%s"),
+		*ConfigPath,
+		FPaths::FileExists(ConfigPath) ? TEXT("true") : TEXT("false"));
+	UE_LOG(LogTajsGraph, Display, TEXT("[TajsGraph] Bundled remap config source=%s exists=%s"),
+		*BundledSettingsPath,
+		FPaths::FileExists(BundledSettingsPath) ? TEXT("true") : TEXT("false"));
 	if (ShouldGeneralLog())
 	{
 		UE_LOG(LogTajsGraph, Log, TEXT("[TajsGraph] StartupModule. ConfigPath=%s Exists=%s"),

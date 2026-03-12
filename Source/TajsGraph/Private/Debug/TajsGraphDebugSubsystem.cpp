@@ -26,6 +26,7 @@
 #include "UObject/SoftObjectPath.h"
 #include "SceneViewExtension.h"
 #include "TajsGraphModule.h"
+#include "TajsGraphSmlSettings.h"
 #include "UI/TajsGraphDebugOverlayWidget.h"
 #include "UI/TajsGraphDebugMenuWidget.h"
 
@@ -65,10 +66,43 @@ namespace
         return FDateTime::UtcNow().ToString(TEXT("%Y%m%d_%H%M%S"));
     }
 
+    static FString NormalizeWidgetClassPath(FString ClassPath)
+    {
+        ClassPath = ClassPath.TrimStartAndEnd();
+        if (ClassPath.IsEmpty())
+        {
+            return ClassPath;
+        }
+
+        if (ClassPath.EndsWith(TEXT("_C")))
+        {
+            return ClassPath;
+        }
+
+        FString PackagePath = ClassPath;
+        FString ObjectName;
+        if (ClassPath.Split(TEXT("."), &PackagePath, &ObjectName, ESearchCase::CaseSensitive, ESearchDir::FromEnd))
+        {
+            if (!ObjectName.IsEmpty())
+            {
+                return FString::Printf(TEXT("%s.%s_C"), *PackagePath, *ObjectName);
+            }
+        }
+
+        int32 SlashIndex = INDEX_NONE;
+        if (ClassPath.FindLastChar(TEXT('/'), SlashIndex) && SlashIndex != INDEX_NONE && SlashIndex + 1 < ClassPath.Len())
+        {
+            const FString LeafName = ClassPath.Mid(SlashIndex + 1);
+            return FString::Printf(TEXT("%s.%s_C"), *ClassPath, *LeafName);
+        }
+
+        return ClassPath;
+    }
+
     static UClass* ResolveHubWidgetClass()
     {
         FString ClassPath;
-        FTajsGraphModule::GetStringSetting(TEXT("DebugHub"), TEXT("HubWidgetClass"), ClassPath);
+        TajsGraphSmlSettings::GetString(TEXT("DebugHub"), TEXT("HubWidgetClass"), ClassPath);
         ClassPath = ClassPath.TrimStartAndEnd();
         if (ClassPath.IsEmpty())
         {
@@ -82,8 +116,32 @@ namespace
             return LoadedClass;
         }
 
+        const FString NormalizedClassPath = NormalizeWidgetClassPath(ClassPath);
+        if (!NormalizedClassPath.Equals(ClassPath, ESearchCase::CaseSensitive))
+        {
+            FSoftClassPath NormalizedSoftClassPath(NormalizedClassPath);
+            if (UClass* LoadedNormalizedClass = NormalizedSoftClassPath.TryLoadClass<UTajsGraphDebugMenuWidget>())
+            {
+                UE_LOG(LogTajsGraph, Log, TEXT("[TajsGraph][DebugHub] Normalized HubWidgetClass '%s' -> '%s'."), *ClassPath, *NormalizedClassPath);
+                return LoadedNormalizedClass;
+            }
+        }
+
         UE_LOG(LogTajsGraph, Warning, TEXT("[TajsGraph][DebugHub] Failed to load HubWidgetClass '%s'. No debug hub will be shown."), *ClassPath);
         return nullptr;
+    }
+
+    static void PersistDebugHubBoolSetting(const TCHAR* Key, const bool bValue)
+    {
+        if (!TajsGraphSmlSettings::SetBool(TEXT("DebugHub"), Key, bValue))
+        {
+            return;
+        }
+
+        FTajsGraphModule::OnSettingChanged().Broadcast(
+            TEXT("DebugHub"),
+            Key,
+            bValue ? TEXT("true") : TEXT("false"));
     }
 
     static float Percentile(const TArray<float> &SortedValues, const float P)
@@ -194,7 +252,7 @@ void UTajsGraphDebugSubsystem::SetDebugEnabled(const bool bEnabled)
     }
 
     bDebugEnabled = bEnabled;
-    FTajsGraphModule::SetBoolSetting(TEXT("DebugHub"), TEXT("Enabled"), bEnabled, false);
+    PersistDebugHubBoolSetting(TEXT("Enabled"), bEnabled);
     if (!bDebugEnabled)
     {
         ApplyOverlayVisibility(false, false);
@@ -658,7 +716,7 @@ void UTajsGraphDebugSubsystem::ApplyOverlayVisibility(const bool bVisible, const
     bOverlayVisible = bVisible;
     if (bPersistSetting)
     {
-        FTajsGraphModule::SetBoolSetting(TEXT("DebugHub"), TEXT("OverlayEnabled"), bVisible, false);
+        PersistDebugHubBoolSetting(TEXT("OverlayEnabled"), bVisible);
     }
 
     if (bOverlayVisible && !bDebugEnabled)
@@ -1031,21 +1089,21 @@ void UTajsGraphDebugSubsystem::RefreshConfigFromSettings()
     auto ReadBool = [](const TCHAR *Key, const bool DefaultValue)
     {
         bool Value = DefaultValue;
-        FTajsGraphModule::GetBoolSetting(TEXT("DebugHub"), Key, Value);
+        TajsGraphSmlSettings::GetBool(TEXT("DebugHub"), Key, Value);
         return Value;
     };
 
     auto ReadInt = [](const TCHAR *Key, const int32 DefaultValue)
     {
         int32 Value = DefaultValue;
-        FTajsGraphModule::GetIntSetting(TEXT("DebugHub"), Key, Value);
+        TajsGraphSmlSettings::GetInt(TEXT("DebugHub"), Key, Value);
         return Value;
     };
 
     auto ReadFloat = [](const TCHAR *Key, const float DefaultValue)
     {
         float Value = DefaultValue;
-        FTajsGraphModule::GetFloatSetting(TEXT("DebugHub"), Key, Value);
+        TajsGraphSmlSettings::GetFloat(TEXT("DebugHub"), Key, Value);
         return Value;
     };
 

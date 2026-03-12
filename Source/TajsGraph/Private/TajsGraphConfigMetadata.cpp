@@ -134,6 +134,24 @@ namespace TajsGraphInternal
                 return;
             }
 
+            if (Section == TEXT("Rendering"))
+            {
+                if (Key == TEXT("MaximumActiveLights"))
+                {
+                    OutMin = 0.0f;
+                    OutMax = 5000.0f;
+                    OutStep = 1.0f;
+                    return;
+                }
+                if (Key == TEXT("LightPoolRelevancy"))
+                {
+                    OutMin = 0.0f;
+                    OutMax = 100.0f;
+                    OutStep = 0.1f;
+                    return;
+                }
+            }
+
             if (Section != TEXT("PPV"))
             {
                 return;

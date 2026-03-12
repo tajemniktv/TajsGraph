@@ -225,6 +225,12 @@ public:
     bool GPUOcclusionQueries{};
 
     UPROPERTY(BlueprintReadWrite)
+    float LightPoolRelevancy{};
+
+    UPROPERTY(BlueprintReadWrite)
+    int32 MaximumActiveLights{};
+
+    UPROPERTY(BlueprintReadWrite)
     bool SkyAtmosphereEnabled{};
 
     UPROPERTY(BlueprintReadWrite)
