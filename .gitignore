@@ -82,5 +82,10 @@ Content/Buildables/*
 # Remove the hidden files 
 Hidden/*
 
-# Remove the Surce files as they contain the source code of other plugins
-Source/*
+# For now, remove all content
+Content/SM/*
+Content/Fab/*
+Content/Materials/*
+Content/Textures/*
+Content/*
+
