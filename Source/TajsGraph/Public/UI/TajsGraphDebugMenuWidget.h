@@ -151,7 +151,6 @@ private:
 
     void BuildBaseLayout();
     void ResolveWidgetReferences();
-    void BindButtonHandler(UButton* Button, void (UTajsGraphDebugMenuWidget::*Handler)());
     void UpdateBoundShellState();
     void SetPageHeaderCopy(const FString& Title, const FString& Lead);
     UPanelWidget* GetContentHost() const;

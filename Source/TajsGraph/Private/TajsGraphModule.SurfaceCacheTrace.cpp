@@ -514,29 +514,6 @@ namespace TajsGraphInternal
             });
 
         SUBSCRIBE_UOBJECT_METHOD_EXPLICIT(
-            void (AFGBuildable::*)(const FFactoryCustomizationData&),
-            AFGBuildable,
-            ApplyCustomizationData_Native,
-            [](TCallScope<void(*)(AFGBuildable*, const FFactoryCustomizationData&)>& Scope, AFGBuildable* Self, const FFactoryCustomizationData& CustomizationData)
-            {
-                Scope(Self, CustomizationData);
-                if (Self)
-                {
-                    const bool bPreviewActive = IsSurfaceCachePreviewActive();
-                    const UStaticMeshComponent* RepresentativeComponent = FindRepresentativeStaticMeshComponent(Self);
-                    if (bPreviewActive)
-                    {
-                        TouchSurfaceCachePreviewActivity(Self, TEXT("AFGBuildable::ApplyCustomizationData_Native"));
-                        const FString Extra = FString::Printf(TEXT("Source=AFGBuildable::ApplyCustomizationData_Native ColorSlot=%d Swatch=%s Pattern=%s Skin=%s"),
-                            CustomizationData.ColorSlot,
-                            CustomizationData.SwatchDesc ? *CustomizationData.SwatchDesc->GetPathName() : TEXT("<null>"),
-                            CustomizationData.PatternDesc ? *CustomizationData.PatternDesc->GetPathName() : TEXT("<null>"),
-                            CustomizationData.SkinDesc ? *CustomizationData.SkinDesc->GetPathName() : TEXT("<null>"));
-                        AddSurfaceCacheTrace(ETajsGraphSurfaceCacheTraceKind::BuildableCustomizationApplied, Self, RepresentativeComponent, Extra, false, false);
-                    }
-                }
-            });
-        SUBSCRIBE_UOBJECT_METHOD_EXPLICIT(
             void (AFGBuildableHologram::*)(const FFactoryCustomizationData&),
             AFGBuildableHologram,
             SetCustomizationData,

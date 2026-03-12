@@ -287,23 +287,36 @@ void UTajsGraphDebugMenuWidget::ResolveWidgetReferences()
     ReportsNavLabel = Cast<UTextBlock>(FindNamedWidget(this, TEXT("ReportsLabel")));
     ProfilesNavLabel = Cast<UTextBlock>(FindNamedWidget(this, TEXT("ProfilesLabel")));
 
-    BindButtonHandler(CloseHubButton, &UTajsGraphDebugMenuWidget::HandleCloseClicked);
-    BindButtonHandler(OverviewNavButton, &UTajsGraphDebugMenuWidget::HandleTabOverview);
-    BindButtonHandler(VisualizationNavButton, &UTajsGraphDebugMenuWidget::HandleTabVisualization);
-    BindButtonHandler(SettingsNavButton, &UTajsGraphDebugMenuWidget::HandleTabSettings);
-    BindButtonHandler(ReportsNavButton, &UTajsGraphDebugMenuWidget::HandleTabDebugReports);
-    BindButtonHandler(ProfilesNavButton, &UTajsGraphDebugMenuWidget::HandleTabProfiles);
-}
-
-void UTajsGraphDebugMenuWidget::BindButtonHandler(UButton* Button, void (UTajsGraphDebugMenuWidget::*Handler)())
-{
-    if (!Button)
+    if (CloseHubButton)
     {
-        return;
+        CloseHubButton->OnClicked.RemoveDynamic(this, &UTajsGraphDebugMenuWidget::HandleCloseClicked);
+        CloseHubButton->OnClicked.AddDynamic(this, &UTajsGraphDebugMenuWidget::HandleCloseClicked);
     }
-
-    Button->OnClicked.RemoveDynamic(this, Handler);
-    Button->OnClicked.AddDynamic(this, Handler);
+    if (OverviewNavButton)
+    {
+        OverviewNavButton->OnClicked.RemoveDynamic(this, &UTajsGraphDebugMenuWidget::HandleTabOverview);
+        OverviewNavButton->OnClicked.AddDynamic(this, &UTajsGraphDebugMenuWidget::HandleTabOverview);
+    }
+    if (VisualizationNavButton)
+    {
+        VisualizationNavButton->OnClicked.RemoveDynamic(this, &UTajsGraphDebugMenuWidget::HandleTabVisualization);
+        VisualizationNavButton->OnClicked.AddDynamic(this, &UTajsGraphDebugMenuWidget::HandleTabVisualization);
+    }
+    if (SettingsNavButton)
+    {
+        SettingsNavButton->OnClicked.RemoveDynamic(this, &UTajsGraphDebugMenuWidget::HandleTabSettings);
+        SettingsNavButton->OnClicked.AddDynamic(this, &UTajsGraphDebugMenuWidget::HandleTabSettings);
+    }
+    if (ReportsNavButton)
+    {
+        ReportsNavButton->OnClicked.RemoveDynamic(this, &UTajsGraphDebugMenuWidget::HandleTabDebugReports);
+        ReportsNavButton->OnClicked.AddDynamic(this, &UTajsGraphDebugMenuWidget::HandleTabDebugReports);
+    }
+    if (ProfilesNavButton)
+    {
+        ProfilesNavButton->OnClicked.RemoveDynamic(this, &UTajsGraphDebugMenuWidget::HandleTabProfiles);
+        ProfilesNavButton->OnClicked.AddDynamic(this, &UTajsGraphDebugMenuWidget::HandleTabProfiles);
+    }
 }
 
 UPanelWidget* UTajsGraphDebugMenuWidget::GetContentHost() const
