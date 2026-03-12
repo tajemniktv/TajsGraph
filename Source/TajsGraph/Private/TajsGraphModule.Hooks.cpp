@@ -67,6 +67,18 @@ static void InstallStaticMeshRemapHookImpl() {
                 return;
             }
 
+            FString GuardReason;
+            if (ShouldGuardSurfaceCacheMutation(StaticMeshComponent, &GuardReason)) {
+                AddSurfaceCacheTrace(
+                    ETajsGraphSurfaceCacheTraceKind::StaticMeshRemapSkipped,
+                    StaticMeshComponent,
+                    StaticMeshComponent,
+                    GuardReason,
+                    false,
+                    true);
+                return;
+            }
+
             ApplyRuntimeAssetRemap(StaticMeshComponent, ConfigSnapshot);
         }
     );

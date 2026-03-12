@@ -116,6 +116,7 @@
         static const TArray<FSettingKeySpec> Specs = {
             { TEXT("Debug"), TEXT("EnableLogging"), ESettingValueType::Bool },
             { TEXT("Debug"), TEXT("EnableDebugLogging"), ESettingValueType::Bool },
+            { TEXT("Debug"), TEXT("EnableSurfaceCacheTrace"), ESettingValueType::Bool },
             { TEXT("Debug"), TEXT("PollExternalConfigChanges"), ESettingValueType::Bool },
 
             { TEXT("DebugHub"), TEXT("Enabled"), ESettingValueType::Bool },
@@ -370,7 +371,19 @@
     static void LoadPersistentPPVConfig(FPPVConfig& Config) {
         TajsGraphSmlSettings::GetBool(TEXT("Debug"), TEXT("EnableLogging"), Config.bEnableLogging);
         TajsGraphSmlSettings::GetBool(TEXT("Debug"), TEXT("EnableDebugLogging"), Config.bEnableDebugLogging);
+        const bool bHasSmlSurfaceTraceFlag = TajsGraphSmlSettings::GetBool(TEXT("Debug"), TEXT("EnableSurfaceCacheTrace"), Config.bEnableSurfaceCacheTrace);
         TajsGraphSmlSettings::GetBool(TEXT("Debug"), TEXT("PollExternalConfigChanges"), Config.bPollExternalConfigChanges);
+
+        const FString RuntimeConfigPath = GetPPVConfigPath();
+        const FString StaticConfigPath = GetBundledSettingsConfigPath();
+        if (!bHasSmlSurfaceTraceFlag && GConfig) {
+            if (!RuntimeConfigPath.IsEmpty()) {
+                GConfig->GetBool(TEXT("Debug"), TEXT("EnableSurfaceCacheTrace"), Config.bEnableSurfaceCacheTrace, RuntimeConfigPath);
+            }
+            if (!StaticConfigPath.IsEmpty()) {
+                GConfig->GetBool(TEXT("Debug"), TEXT("EnableSurfaceCacheTrace"), Config.bEnableSurfaceCacheTrace, StaticConfigPath);
+            }
+        }
 
         TajsGraphSmlSettings::GetBool(TEXT("PPV"), TEXT("Enabled"), Config.bEnabled);
         TajsGraphSmlSettings::GetBool(TEXT("PPV"), TEXT("OverrideLumenMethods"), Config.bOverrideLumenMethods);
@@ -384,8 +397,6 @@
         TajsGraphSmlSettings::GetBool(TEXT("Nanite"), TEXT("ForceNaniteForMasked"), Config.bForceNaniteForMasked);
         TajsGraphSmlSettings::GetBool(TEXT("Foliage"), TEXT("FixBuildableFoliage"), Config.bFixBuildableFoliage);
         const bool bHasSmlRemapFlag = TajsGraphSmlSettings::GetBool(TEXT("Remap"), TEXT("EnableAssetRemap"), Config.bEnableAssetRemap);
-
-        const FString StaticConfigPath = GetBundledSettingsConfigPath();
         if (!bHasSmlRemapFlag && GConfig && !StaticConfigPath.IsEmpty()) {
             GConfig->GetBool(TEXT("Remap"), TEXT("EnableAssetRemap"), Config.bEnableAssetRemap, StaticConfigPath);
         }
@@ -567,9 +578,16 @@
         if (UStaticMesh* CurrentMesh = Component->GetStaticMesh()) {
             FString RemappedMeshPath;
             if (TryGetRemapTarget(Config.MeshRemap, Config.MeshRemapNormalized, CurrentMesh->GetPathName(), RemappedMeshPath)) {
+                AddSurfaceCacheTrace(ETajsGraphSurfaceCacheTraceKind::StaticMeshRemapAttempt, Component, Component, FString::Printf(TEXT("Phase=BeforeMeshSwap Current=%s Target=%s"), *CurrentMesh->GetPathName(), *RemappedMeshPath), false, false);
                 if (UStaticMesh* NewMesh = LoadAssetByPath<UStaticMesh>(RemappedMeshPath)) {
                     if (NewMesh != CurrentMesh) {
+                        if (Component->Mobility == EComponentMobility::Static && ShouldGeneralLog()) {
+                            UE_LOG(LogTajsGraph, Warning, TEXT("[TajsGraph][Remap] Calling SetStaticMesh on static component %s (%s) during runtime remap."),
+                                *Component->GetName(),
+                                *CurrentMesh->GetPathName());
+                        }
                         Component->SetStaticMesh(NewMesh);
+                        AddSurfaceCacheTrace(ETajsGraphSurfaceCacheTraceKind::StaticMeshRemapAttempt, Component, Component, FString::Printf(TEXT("Phase=AppliedMeshSwap Current=%s Target=%s"), *CurrentMesh->GetPathName(), *RemappedMeshPath), true, false);
 
                         const FString LogKey = FString::Printf(TEXT("MeshSwap|%s|%s"), *CurrentMesh->GetPathName(), *RemappedMeshPath);
                         if (!LoggedMessages.Contains(LogKey)) {
@@ -603,9 +621,17 @@
                 continue;
             }
 
+            AddSurfaceCacheTrace(ETajsGraphSurfaceCacheTraceKind::StaticMeshRemapAttempt, Component, Component, FString::Printf(TEXT("Phase=BeforeMaterialSwap Index=%d Current=%s Target=%s"), MaterialIndex, *CurrentMaterial->GetPathName(), *RemappedMaterialPath), false, false);
             if (UMaterialInterface* NewMaterial = LoadAssetByPath<UMaterialInterface>(RemappedMaterialPath)) {
                 if (NewMaterial != CurrentMaterial) {
+                    if (Component->Mobility == EComponentMobility::Static && ShouldGeneralLog()) {
+                        UE_LOG(LogTajsGraph, Warning, TEXT("[TajsGraph][Remap] Calling SetMaterial on static component %s Material[%d]=%s during runtime remap."),
+                            *Component->GetName(),
+                            MaterialIndex,
+                            *CurrentMaterial->GetPathName());
+                    }
                     Component->SetMaterial(MaterialIndex, NewMaterial);
+                    AddSurfaceCacheTrace(ETajsGraphSurfaceCacheTraceKind::StaticMeshRemapAttempt, Component, Component, FString::Printf(TEXT("Phase=AppliedMaterialSwap Index=%d Current=%s Target=%s"), MaterialIndex, *CurrentMaterial->GetPathName(), *RemappedMaterialPath), true, false);
                     const FString LogKey = FString::Printf(TEXT("MatSwap|%s|%s|%d"), *CurrentMaterial->GetPathName(), *RemappedMaterialPath, MaterialIndex);
                     if (!LoggedMessages.Contains(LogKey)) {
                         LoggedMessages.Add(LogKey);

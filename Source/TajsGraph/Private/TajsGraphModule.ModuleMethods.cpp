@@ -293,6 +293,27 @@ void FTajsGraphModule::StartupModule()
 			FFileHelper::SaveStringArrayToFile(Lines, *OutFile);
 			UE_LOG(LogTajsGraph, Display, TEXT("[TajsGraph] Dumped %d CVars to %s"), Lines.Num(), *OutFile); }));
 
+	static IConsoleObject *SurfaceCacheDumpCmd = IConsoleManager::Get().RegisterConsoleCommand(
+		TEXT("tajsgraph.surfacecache.dump"),
+		TEXT("Dump recent surface cache trace events. Usage: tajsgraph.surfacecache.dump [count]"),
+		FConsoleCommandWithArgsDelegate::CreateLambda([](const TArray<FString> &Args)
+													  {
+			int32 Count = 50;
+			if (Args.Num() > 0) {
+				Count = FMath::Max(1, FCString::Atoi(*Args[0]));
+			}
+
+			DumpSurfaceCacheTrace(Count); }),
+		ECVF_Default);
+
+	static FAutoConsoleCommand SurfaceCacheClearCmd(
+		TEXT("tajsgraph.surfacecache.clear"),
+		TEXT("Clear recent surface cache trace events."),
+		FConsoleCommandDelegate::CreateLambda([]()
+											  {
+			ClearSurfaceCacheTrace();
+			UE_LOG(LogTajsGraph, Display, TEXT("[TajsGraph] Cleared surface cache trace buffer.")); }));
+
 	static IConsoleObject *ViewModeCmd = IConsoleManager::Get().RegisterConsoleCommand(
 		TEXT("tajsgraph.viewmode"),
 		TEXT("Set debug visualization mode. Usage: tajsgraph.viewmode list | off | <mode>"),
@@ -411,6 +432,7 @@ void FTajsGraphModule::StartupModule()
 		}),
 		ECVF_Default);
 	InstallPPVHooks();
+	InstallSurfaceCacheHooks();
 	InstallStaticMeshRemapHook();
 	UE_LOG(LogTajsGraph, Display, TEXT("[TajsGraph] Remap startup: enabled=%s, meshRules=%d, materialRules=%d"),
 		GPPVConfig.bEnableAssetRemap ? TEXT("true") : TEXT("false"),

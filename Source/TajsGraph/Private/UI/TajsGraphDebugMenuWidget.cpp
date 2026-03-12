@@ -13,6 +13,7 @@
 #include "Components/EditableTextBox.h"
 #include "Components/HorizontalBox.h"
 #include "Components/HorizontalBoxSlot.h"
+#include "Components/PanelWidget.h"
 #include "Components/ScrollBox.h"
 #include "Components/TextBlock.h"
 #include "Components/VerticalBox.h"
@@ -27,6 +28,7 @@
 #include "Serialization/JsonReader.h"
 #include "Serialization/JsonSerializer.h"
 #include "Serialization/JsonWriter.h"
+#include "UObject/SoftObjectPath.h"
 #include "UI/TajsGraphHubSettingRowWidget.h"
 
 namespace
@@ -195,14 +197,295 @@ static FString MakeSafeProfileName(FString Name)
     }
     return Name;
 }
+
+static UWidget* FindNamedWidget(UUserWidget* Owner, const TCHAR* PrimaryName, const TCHAR* SecondaryName = nullptr, const TCHAR* TertiaryName = nullptr)
+{
+    if (!Owner)
+    {
+        return nullptr;
+    }
+
+    if (PrimaryName && *PrimaryName)
+    {
+        if (UWidget* Widget = Owner->GetWidgetFromName(FName(PrimaryName)))
+        {
+            return Widget;
+        }
+    }
+
+    if (SecondaryName && *SecondaryName)
+    {
+        if (UWidget* Widget = Owner->GetWidgetFromName(FName(SecondaryName)))
+        {
+            return Widget;
+        }
+    }
+
+    if (TertiaryName && *TertiaryName)
+    {
+        if (UWidget* Widget = Owner->GetWidgetFromName(FName(TertiaryName)))
+        {
+            return Widget;
+        }
+    }
+
+    return nullptr;
+}
 }
 
 void UTajsGraphDebugMenuWidget::NativeConstruct()
 {
     Super::NativeConstruct();
+    ResolveWidgetReferences();
+    if (!GetContentHost())
+    {
+        BuildBaseLayout();
+        ResolveWidgetReferences();
+    }
     LoadDescriptors();
+    SetStatusMessage(TEXT("Hub ready."));
     RefreshHubData(true);
     SetActiveTab(ETajsGraphHubTab::Overview);
+}
+
+void UTajsGraphDebugMenuWidget::ResolveWidgetReferences()
+{
+    RootCanvas = RootCanvas ? RootCanvas : Cast<UCanvasPanel>(WidgetTree ? WidgetTree->RootWidget : nullptr);
+    RootPanel = RootPanel ? RootPanel : Cast<UBorder>(FindNamedWidget(this, TEXT("ShellBorder"), TEXT("HubRootPanel")));
+    RootBox = RootBox ? RootBox : Cast<UVerticalBox>(FindNamedWidget(this, TEXT("HubRootVBox")));
+    HeaderText = HeaderText ? HeaderText : Cast<UTextBlock>(FindNamedWidget(this, TEXT("HubTitle"), TEXT("HeaderText")));
+
+    PageTitleText = Cast<UTextBlock>(FindNamedWidget(this, TEXT("PageTitle")));
+    PageLeadText = Cast<UTextBlock>(FindNamedWidget(this, TEXT("PageLead")));
+    FooterText = Cast<UTextBlock>(FindNamedWidget(this, TEXT("FooterText")));
+    StatusText = Cast<UTextBlock>(FindNamedWidget(this, TEXT("StatusText"), TEXT("FooterText")));
+
+    ContentScrollBox = Cast<UScrollBox>(FindNamedWidget(this, TEXT("PageBodyHost"), TEXT("HubContentScroll")));
+    if (ContentScrollBox)
+    {
+        ContentHost = ContentScrollBox;
+    }
+    else
+    {
+        ContentHost = Cast<UPanelWidget>(FindNamedWidget(this, TEXT("PageBodyHost"), TEXT("OverviewCards"), TEXT("HubContentScroll")));
+    }
+
+    AdvancedCheckBox = Cast<UCheckBox>(FindNamedWidget(this, TEXT("AdvancedToggle"), TEXT("AdvancedCheckBox")));
+    SectionCombo = Cast<UComboBoxString>(FindNamedWidget(this, TEXT("SectionCombo")));
+    bHasExternalSettingsControls = AdvancedCheckBox && SectionCombo;
+
+    CloseHubButton = Cast<UButton>(FindNamedWidget(this, TEXT("CloseButton"), TEXT("CloseHubBtn")));
+    OverviewNavButton = Cast<UButton>(FindNamedWidget(this, TEXT("OverviewButton"), TEXT("TabOverview")));
+    VisualizationNavButton = Cast<UButton>(FindNamedWidget(this, TEXT("VisualizationButton"), TEXT("TabVisualization")));
+    SettingsNavButton = Cast<UButton>(FindNamedWidget(this, TEXT("SettingsButton"), TEXT("TabSettings")));
+    ReportsNavButton = Cast<UButton>(FindNamedWidget(this, TEXT("ReportsButton"), TEXT("TabDebug")));
+    ProfilesNavButton = Cast<UButton>(FindNamedWidget(this, TEXT("ProfilesButton"), TEXT("TabProfiles")));
+
+    OverviewNavLabel = Cast<UTextBlock>(FindNamedWidget(this, TEXT("OverviewLabel")));
+    VisualizationNavLabel = Cast<UTextBlock>(FindNamedWidget(this, TEXT("VisualizationLabel")));
+    SettingsNavLabel = Cast<UTextBlock>(FindNamedWidget(this, TEXT("SettingsLabel")));
+    ReportsNavLabel = Cast<UTextBlock>(FindNamedWidget(this, TEXT("ReportsLabel")));
+    ProfilesNavLabel = Cast<UTextBlock>(FindNamedWidget(this, TEXT("ProfilesLabel")));
+
+    BindButtonHandler(CloseHubButton, &UTajsGraphDebugMenuWidget::HandleCloseClicked);
+    BindButtonHandler(OverviewNavButton, &UTajsGraphDebugMenuWidget::HandleTabOverview);
+    BindButtonHandler(VisualizationNavButton, &UTajsGraphDebugMenuWidget::HandleTabVisualization);
+    BindButtonHandler(SettingsNavButton, &UTajsGraphDebugMenuWidget::HandleTabSettings);
+    BindButtonHandler(ReportsNavButton, &UTajsGraphDebugMenuWidget::HandleTabDebugReports);
+    BindButtonHandler(ProfilesNavButton, &UTajsGraphDebugMenuWidget::HandleTabProfiles);
+}
+
+void UTajsGraphDebugMenuWidget::BindButtonHandler(UButton* Button, void (UTajsGraphDebugMenuWidget::*Handler)())
+{
+    if (!Button)
+    {
+        return;
+    }
+
+    Button->OnClicked.RemoveDynamic(this, Handler);
+    Button->OnClicked.AddDynamic(this, Handler);
+}
+
+UPanelWidget* UTajsGraphDebugMenuWidget::GetContentHost() const
+{
+    if (ContentHost)
+    {
+        return ContentHost;
+    }
+
+    return ContentScrollBox;
+}
+
+UPanelWidget* UTajsGraphDebugMenuWidget::GetActivePageBodyHost() const
+{
+    if (ActivePageBodyHost)
+    {
+        return ActivePageBodyHost;
+    }
+
+    return GetContentHost();
+}
+
+UPanelWidget* UTajsGraphDebugMenuWidget::FindActivePagePanel(const TCHAR* PrimaryName, const TCHAR* SecondaryName) const
+{
+    if (!ActivePageShellWidget)
+    {
+        return nullptr;
+    }
+
+    if (PrimaryName && *PrimaryName)
+    {
+        if (UPanelWidget* Panel = Cast<UPanelWidget>(ActivePageShellWidget->GetWidgetFromName(FName(PrimaryName))))
+        {
+            return Panel;
+        }
+    }
+
+    if (SecondaryName && *SecondaryName)
+    {
+        if (UPanelWidget* Panel = Cast<UPanelWidget>(ActivePageShellWidget->GetWidgetFromName(FName(SecondaryName))))
+        {
+            return Panel;
+        }
+    }
+
+    return nullptr;
+}
+
+UClass* UTajsGraphDebugMenuWidget::ResolvePageShellClass(const ETajsGraphHubTab Tab) const
+{
+    const TCHAR* ClassPath = nullptr;
+    switch (Tab)
+    {
+    case ETajsGraphHubTab::Overview:
+        ClassPath = TEXT("/TajsGraph/UI/Pages/TajsGraphHubPage_Overview.TajsGraphHubPage_Overview_C");
+        break;
+    case ETajsGraphHubTab::Visualization:
+        ClassPath = TEXT("/TajsGraph/UI/Pages/TajsGraphHubPage_Visualization.TajsGraphHubPage_Visualization_C");
+        break;
+    case ETajsGraphHubTab::Settings:
+        ClassPath = TEXT("/TajsGraph/UI/Pages/TajsGraphHubPage_Settings.TajsGraphHubPage_Settings_C");
+        break;
+    case ETajsGraphHubTab::DebugReports:
+        ClassPath = TEXT("/TajsGraph/UI/Pages/TajsGraphHubPage_DebugReports.TajsGraphHubPage_DebugReports_C");
+        break;
+    case ETajsGraphHubTab::Profiles:
+        ClassPath = TEXT("/TajsGraph/UI/Pages/TajsGraphHubPage_Profiles.TajsGraphHubPage_Profiles_C");
+        break;
+    default:
+        break;
+    }
+
+    if (!ClassPath)
+    {
+        return nullptr;
+    }
+
+    return FSoftClassPath(ClassPath).TryLoadClass<UUserWidget>();
+}
+
+void UTajsGraphDebugMenuWidget::CreateActivePageShell()
+{
+    ActivePageShellWidget = nullptr;
+    ActivePageBodyHost = GetContentHost();
+
+    UPanelWidget* const HubContentHost = GetContentHost();
+    if (!HubContentHost)
+    {
+        return;
+    }
+
+    if (UClass* PageShellClass = ResolvePageShellClass(ActiveTab))
+    {
+        ActivePageShellWidget = CreateWidget<UUserWidget>(GetWorld(), PageShellClass);
+        if (!ActivePageShellWidget)
+        {
+            return;
+        }
+
+        HubContentHost->AddChild(ActivePageShellWidget);
+
+        if (UPanelWidget* PageBodyHost = Cast<UPanelWidget>(ActivePageShellWidget->GetWidgetFromName(TEXT("PageBodyHost"))))
+        {
+            ActivePageBodyHost = PageBodyHost;
+        }
+    }
+}
+
+void UTajsGraphDebugMenuWidget::SetPageHeaderCopy(const FString& Title, const FString& Lead)
+{
+    if (PageTitleText)
+    {
+        PageTitleText->SetText(FText::FromString(Title));
+    }
+
+    if (PageLeadText)
+    {
+        PageLeadText->SetText(FText::FromString(Lead));
+    }
+}
+
+void UTajsGraphDebugMenuWidget::UpdateBoundShellState()
+{
+    auto ApplyNavState = [](UButton* Button, UTextBlock* Label, const bool bSelected)
+    {
+        if (Button)
+        {
+            Button->SetBackgroundColor(bSelected
+                ? FLinearColor(0.86f, 0.49f, 0.16f, 1.0f)
+                : FLinearColor(0.11f, 0.13f, 0.16f, 1.0f));
+            Button->SetColorAndOpacity(bSelected
+                ? FLinearColor(0.86f, 0.49f, 0.16f, 1.0f)
+                : FLinearColor(0.11f, 0.13f, 0.16f, 1.0f));
+        }
+
+        if (Label)
+        {
+            Label->SetColorAndOpacity(FSlateColor(bSelected
+                ? FLinearColor(0.11f, 0.10f, 0.09f, 1.0f)
+                : FLinearColor(0.84f, 0.88f, 0.92f, 1.0f)));
+        }
+    };
+
+    FString Title = TEXT("Overview");
+    FString Lead = TEXT("Live state, visualization status, and the fastest path into reports, tuning, and profiles.");
+    switch (ActiveTab)
+    {
+    case ETajsGraphHubTab::Visualization:
+        Title = TEXT("Visualization");
+        Lead = TEXT("Cycle rendering modes, confirm compatibility, and compare the current view path without leaving play.");
+        break;
+    case ETajsGraphHubTab::Settings:
+        Title = TEXT("Settings");
+        Lead = TEXT("Adjust live TajsGraph settings with scoped filters, reversible drafts, and profile-safe apply actions.");
+        break;
+    case ETajsGraphHubTab::DebugReports:
+        Title = TEXT("Debug / Reports");
+        Lead = TEXT("Toggle overlays, inspect report settings, and generate artifact bundles for the current runtime state.");
+        break;
+    case ETajsGraphHubTab::Profiles:
+        Title = TEXT("Profiles");
+        Lead = TEXT("Save, load, rename, duplicate, import, and export settings profiles from the live draft.");
+        break;
+    default:
+        break;
+    }
+
+    SetPageHeaderCopy(Title, Lead);
+
+    ApplyNavState(OverviewNavButton, OverviewNavLabel, ActiveTab == ETajsGraphHubTab::Overview);
+    ApplyNavState(VisualizationNavButton, VisualizationNavLabel, ActiveTab == ETajsGraphHubTab::Visualization);
+    ApplyNavState(SettingsNavButton, SettingsNavLabel, ActiveTab == ETajsGraphHubTab::Settings);
+    ApplyNavState(ReportsNavButton, ReportsNavLabel, ActiveTab == ETajsGraphHubTab::DebugReports);
+    ApplyNavState(ProfilesNavButton, ProfilesNavLabel, ActiveTab == ETajsGraphHubTab::Profiles);
+
+    if (FooterText)
+    {
+        const FString StatusLine = LastStatusMessage.IsEmpty() ? TEXT("Hub ready.") : LastStatusMessage;
+        FooterText->SetText(FText::FromString(FString::Printf(
+            TEXT("%s  |  F7 Hub  |  F8 Overlay  |  F12 Visualization  |  [ ] Mode"),
+            *StatusLine)));
+    }
 }
 
 
@@ -223,10 +506,11 @@ void UTajsGraphDebugMenuWidget::RefreshHubData(const bool bResetBaseline)
 {
     LoadDescriptors();
     InitializeDraftFromLive(bResetBaseline);
-    if (ActiveTab == ETajsGraphHubTab::Settings && ContentScrollBox)
+    if (GetContentHost())
     {
-        RebuildSettingsRows();
+        RebuildActiveTabContent();
     }
+    UpdateBoundShellState();
     BP_OnHubDataRefreshed();
 }
 
@@ -867,31 +1151,34 @@ void UTajsGraphDebugMenuWidget::SetActiveTab(const ETajsGraphHubTab NewTab)
 {
     ActiveTab = NewTab;
     const bool bSettingsTab = ActiveTab == ETajsGraphHubTab::Settings;
-    if (AdvancedCheckBox)
+    if (bHasExternalSettingsControls && AdvancedCheckBox)
     {
         AdvancedCheckBox->SetVisibility(bSettingsTab ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
     }
-    if (SectionCombo)
+    if (bHasExternalSettingsControls && SectionCombo)
     {
         SectionCombo->SetVisibility(bSettingsTab ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
     }
 
-    if (ContentScrollBox)
+    if (GetContentHost())
     {
         RebuildActiveTabContent();
     }
+    UpdateBoundShellState();
     BP_OnActiveTabChanged(NewTab);
 }
 
 void UTajsGraphDebugMenuWidget::RebuildActiveTabContent()
 {
-    if (!ContentScrollBox)
+    UPanelWidget* const ActiveContentHost = GetContentHost();
+    if (!ActiveContentHost)
     {
         return;
     }
 
-    ContentScrollBox->ClearChildren();
+    ActiveContentHost->ClearChildren();
     SettingRows.Reset();
+    CreateActivePageShell();
 
     switch (ActiveTab)
     {
@@ -906,39 +1193,60 @@ void UTajsGraphDebugMenuWidget::RebuildActiveTabContent()
 
 void UTajsGraphDebugMenuWidget::RebuildOverviewTab()
 {
+    UPanelWidget* const SummaryHost = FindActivePagePanel(TEXT("OverviewSummaryHost"));
+    UPanelWidget* const ActionsHost = FindActivePagePanel(TEXT("OverviewActionsHost"));
     UVerticalBox* Box = WidgetTree->ConstructWidget<UVerticalBox>(UVerticalBox::StaticClass(), TEXT("OverviewBox"));
-    ContentScrollBox->AddChild(Box);
+    if (UPanelWidget* const ActiveContentHost = GetActivePageBodyHost())
+    {
+        ActiveContentHost->AddChild(Box);
+    }
 
     UTajsGraphDebugSubsystem* DebugSubsystem = ResolveDebugSubsystem();
-    AddTextLine(WidgetTree, Box, TEXT("Overview"), FLinearColor(0.95f, 0.98f, 1.0f, 1.0f), 12);
     if (!DebugSubsystem)
     {
-        AddTextLine(WidgetTree, Box, TEXT("No debug subsystem available."), FLinearColor::Yellow, 10);
+        AddTextLine(WidgetTree, SummaryHost ? SummaryHost : Box, TEXT("No debug subsystem available."), FLinearColor::Yellow, 10);
         return;
     }
 
-    AddTextLine(WidgetTree, Box, FString::Printf(TEXT("DebugHub: %s"), DebugSubsystem->IsDebugEnabled() ? TEXT("On") : TEXT("Off")));
-    AddTextLine(WidgetTree, Box, FString::Printf(TEXT("Overlay: %s"), DebugSubsystem->IsOverlayVisible() ? TEXT("On") : TEXT("Off")));
-    AddTextLine(WidgetTree, Box, FString::Printf(TEXT("Visualization: %s (%s)"), DebugSubsystem->IsVisualizationEnabled() ? TEXT("On") : TEXT("Off"), *GetVisModeDisplayName(DebugSubsystem->GetVisualizationMode())));
-    AddTextLine(WidgetTree, Box, FString::Printf(TEXT("Draft pending changes: %d"), ChangedKeys.Num()));
+    AddTextLine(WidgetTree, SummaryHost ? SummaryHost : Box, FString::Printf(TEXT("DebugHub: %s"), DebugSubsystem->IsDebugEnabled() ? TEXT("On") : TEXT("Off")));
+    AddTextLine(WidgetTree, SummaryHost ? SummaryHost : Box, FString::Printf(TEXT("Overlay: %s"), DebugSubsystem->IsOverlayVisible() ? TEXT("On") : TEXT("Off")));
+    AddTextLine(WidgetTree, SummaryHost ? SummaryHost : Box, FString::Printf(TEXT("Visualization: %s (%s)"), DebugSubsystem->IsVisualizationEnabled() ? TEXT("On") : TEXT("Off"), *GetVisModeDisplayName(DebugSubsystem->GetVisualizationMode())));
+    AddTextLine(WidgetTree, SummaryHost ? SummaryHost : Box, FString::Printf(TEXT("Draft pending changes: %d"), ChangedKeys.Num()));
+
+    if (ActionsHost)
+    {
+        if (UButton* Btn = AddButton(WidgetTree, ActionsHost, TEXT("OverviewToggleVisBtn"), TEXT("Toggle Visualization"))) { Btn->OnClicked.AddDynamic(this, &UTajsGraphDebugMenuWidget::HandleVisToggleClicked); }
+        if (UButton* Btn = AddButton(WidgetTree, ActionsHost, TEXT("OverviewToggleOverlayBtn"), TEXT("Toggle Overlay"))) { Btn->OnClicked.AddDynamic(this, &UTajsGraphDebugMenuWidget::HandleOverlayToggleClicked); }
+        if (UButton* Btn = AddButton(WidgetTree, ActionsHost, TEXT("OverviewOpenReportsBtn"), TEXT("Open Reports"))) { Btn->OnClicked.AddDynamic(this, &UTajsGraphDebugMenuWidget::HandleTabDebugReports); }
+    }
+
     AddTextLine(WidgetTree, Box, TEXT("Hotkeys: F7 Hub, F8 Overlay, F12 Visualization, [ ] Mode"));
+    AddTextLine(WidgetTree, Box, TEXT("Use the left rail to switch pages without losing the current shell context."));
 }
 
 void UTajsGraphDebugMenuWidget::RebuildVisualizationTab()
 {
+    UPanelWidget* const ControlsHost = FindActivePagePanel(TEXT("VisualizationControlsHost"));
+    UPanelWidget* const StatusHost = FindActivePagePanel(TEXT("VisualizationStatusHost"));
     UVerticalBox* Box = WidgetTree->ConstructWidget<UVerticalBox>(UVerticalBox::StaticClass(), TEXT("VisBox"));
-    ContentScrollBox->AddChild(Box);
+    if (UPanelWidget* const ActiveContentHost = GetActivePageBodyHost())
+    {
+        ActiveContentHost->AddChild(Box);
+    }
 
-    AddTextLine(WidgetTree, Box, TEXT("Visualization"), FLinearColor(0.95f, 0.98f, 1.0f, 1.0f), 12);
     UTajsGraphDebugSubsystem* DebugSubsystem = ResolveDebugSubsystem();
     if (!DebugSubsystem)
     {
-        AddTextLine(WidgetTree, Box, TEXT("No debug subsystem available."), FLinearColor::Yellow, 10);
+        AddTextLine(WidgetTree, StatusHost ? StatusHost : Box, TEXT("No debug subsystem available."), FLinearColor::Yellow, 10);
         return;
     }
 
-    UHorizontalBox* Controls = WidgetTree->ConstructWidget<UHorizontalBox>(UHorizontalBox::StaticClass(), TEXT("VisControls"));
-    Box->AddChildToVerticalBox(Controls);
+    UHorizontalBox* Controls = Cast<UHorizontalBox>(ControlsHost);
+    if (!Controls)
+    {
+        Controls = WidgetTree->ConstructWidget<UHorizontalBox>(UHorizontalBox::StaticClass(), TEXT("VisControls"));
+        Box->AddChildToVerticalBox(Controls);
+    }
 
     VisualizationModeCombo = WidgetTree->ConstructWidget<UComboBoxString>(UComboBoxString::StaticClass(), TEXT("VisualizationModeCombo"));
     if (VisualizationModeCombo)
@@ -965,13 +1273,27 @@ void UTajsGraphDebugMenuWidget::RebuildVisualizationTab()
     if (UButton* Btn = AddButton(WidgetTree, Controls, TEXT("VisNextBtn"), TEXT("Next"))) { Btn->OnClicked.AddDynamic(this, &UTajsGraphDebugMenuWidget::HandleVisNextClicked); }
 
     const ETajsGraphVisMode CurrentMode = DebugSubsystem->GetVisualizationMode();
-    AddTextLine(WidgetTree, Box, FString::Printf(TEXT("Current: %s (%s)"), *GetVisModeDisplayName(CurrentMode), DebugSubsystem->IsVisualizationEnabled() ? TEXT("enabled") : TEXT("disabled")));
-    AddTextLine(WidgetTree, Box, FString::Printf(TEXT("Compatibility: %s"), *GetCompatibilityTextForMode(CurrentMode)), FLinearColor(0.88f, 0.95f, 1.0f, 1.0f));
+    AddTextLine(WidgetTree, StatusHost ? StatusHost : Box, FString::Printf(TEXT("Current: %s (%s)"), *GetVisModeDisplayName(CurrentMode), DebugSubsystem->IsVisualizationEnabled() ? TEXT("enabled") : TEXT("disabled")));
+    AddTextLine(WidgetTree, StatusHost ? StatusHost : Box, FString::Printf(TEXT("Compatibility: %s"), *GetCompatibilityTextForMode(CurrentMode)), FLinearColor(0.88f, 0.95f, 1.0f, 1.0f));
+    AddTextLine(WidgetTree, Box, TEXT("Use Prev/Next for fast iteration while testing rendering changes in live play."));
 }
 void UTajsGraphDebugMenuWidget::RebuildSettingsTab()
 {
-    if (SectionCombo)
+    UPanelWidget* const ToolbarHost = FindActivePagePanel(TEXT("SettingsToolbarHost"));
+    UPanelWidget* const InfoHost = FindActivePagePanel(TEXT("SettingsInfoHost"));
+    UVerticalBox* Box = WidgetTree->ConstructWidget<UVerticalBox>(UVerticalBox::StaticClass(), TEXT("SettingsRootBox"));
+    if (UPanelWidget* const ActiveContentHost = GetActivePageBodyHost())
     {
+        ActiveContentHost->AddChild(Box);
+    }
+
+    auto PopulateSectionOptions = [this]()
+    {
+        if (!SectionCombo)
+        {
+            return;
+        }
+
         SectionCombo->ClearOptions();
         SectionCombo->AddOption(TEXT("All"));
 
@@ -998,17 +1320,67 @@ void UTajsGraphDebugMenuWidget::RebuildSettingsTab()
         }
 
         SectionCombo->SetSelectedOption(CurrentSettingsSection);
+    };
+
+    if (bHasExternalSettingsControls)
+    {
+        PopulateSectionOptions();
+    }
+    else
+    {
+        UHorizontalBox* Controls = Cast<UHorizontalBox>(ToolbarHost);
+        if (!Controls)
+        {
+            Controls = WidgetTree->ConstructWidget<UHorizontalBox>(UHorizontalBox::StaticClass(), TEXT("InlineSettingsControls"));
+            Box->AddChildToVerticalBox(Controls);
+        }
+
+        AdvancedCheckBox = WidgetTree->ConstructWidget<UCheckBox>(UCheckBox::StaticClass(), TEXT("InlineAdvancedToggle"));
+        if (AdvancedCheckBox)
+        {
+            AdvancedCheckBox->SetIsChecked(bShowAdvanced);
+            AdvancedCheckBox->OnCheckStateChanged.AddDynamic(this, &UTajsGraphDebugMenuWidget::HandleAdvancedFilterChanged);
+            if (UHorizontalBoxSlot* AdvancedToggleSlot = Controls->AddChildToHorizontalBox(AdvancedCheckBox))
+            {
+                AdvancedToggleSlot->SetPadding(FMargin(2.0f));
+            }
+        }
+
+        AddTextLine(WidgetTree, Controls, TEXT("Show Advanced / Dangerous"), FLinearColor(1.0f, 0.80f, 0.35f, 1.0f), 9);
+
+        SectionCombo = WidgetTree->ConstructWidget<UComboBoxString>(UComboBoxString::StaticClass(), TEXT("InlineSectionCombo"));
+        if (SectionCombo)
+        {
+            SectionCombo->OnSelectionChanged.AddDynamic(this, &UTajsGraphDebugMenuWidget::HandleSectionSelectionChanged);
+            if (UHorizontalBoxSlot* SectionComboSlot = Controls->AddChildToHorizontalBox(SectionCombo))
+            {
+                SectionComboSlot->SetPadding(FMargin(8.0f, 2.0f));
+            }
+        }
+
+        PopulateSectionOptions();
+
+        if (UButton* Btn = AddButton(WidgetTree, Controls, TEXT("InlineApplyDraftBtn"), TEXT("Apply"))) { Btn->OnClicked.AddDynamic(this, &UTajsGraphDebugMenuWidget::HandleApplyDraftClicked); }
+        if (UButton* Btn = AddButton(WidgetTree, Controls, TEXT("InlineResetSectionBtn"), TEXT("Reset Section"))) { Btn->OnClicked.AddDynamic(this, &UTajsGraphDebugMenuWidget::HandleResetSectionClicked); }
+        if (UButton* Btn = AddButton(WidgetTree, Controls, TEXT("InlineRevertAllBtn"), TEXT("Revert All"))) { Btn->OnClicked.AddDynamic(this, &UTajsGraphDebugMenuWidget::HandleRevertAllClicked); }
     }
 
-    RebuildSettingsRows();
+    AddTextLine(WidgetTree, InfoHost ? InfoHost : Box, FString::Printf(TEXT("Changed keys: %d"), ChangedKeys.Num()), FLinearColor(0.86f, 0.92f, 1.0f, 1.0f), 9);
+    AddTextLine(WidgetTree, InfoHost ? InfoHost : Box, FString::Printf(TEXT("Current section: %s"), *MakeSectionLabel(CurrentSettingsSection.IsEmpty() ? TEXT("All") : CurrentSettingsSection)), FLinearColor(0.72f, 0.82f, 0.92f, 1.0f), 9);
+
+    PopulateSettingsRows(Box);
 }
 
 void UTajsGraphDebugMenuWidget::RebuildDebugReportsTab()
 {
+    UPanelWidget* const PrimaryHost = FindActivePagePanel(TEXT("ReportsPrimaryHost"));
+    UPanelWidget* const SecondaryHost = FindActivePagePanel(TEXT("ReportsSecondaryHost"));
     UVerticalBox* Box = WidgetTree->ConstructWidget<UVerticalBox>(UVerticalBox::StaticClass(), TEXT("DebugBox"));
-    ContentScrollBox->AddChild(Box);
+    if (UPanelWidget* const ActiveContentHost = GetActivePageBodyHost())
+    {
+        ActiveContentHost->AddChild(Box);
+    }
 
-    AddTextLine(WidgetTree, Box, TEXT("Debug / Reports"), FLinearColor(0.95f, 0.98f, 1.0f, 1.0f), 12);
     UTajsGraphDebugSubsystem* DebugSubsystem = ResolveDebugSubsystem();
     if (!DebugSubsystem)
     {
@@ -1016,8 +1388,12 @@ void UTajsGraphDebugMenuWidget::RebuildDebugReportsTab()
         return;
     }
 
-    UHorizontalBox* Row1 = WidgetTree->ConstructWidget<UHorizontalBox>(UHorizontalBox::StaticClass(), TEXT("DebugRow1"));
-    Box->AddChildToVerticalBox(Row1);
+    UHorizontalBox* Row1 = Cast<UHorizontalBox>(PrimaryHost);
+    if (!Row1)
+    {
+        Row1 = WidgetTree->ConstructWidget<UHorizontalBox>(UHorizontalBox::StaticClass(), TEXT("DebugRow1"));
+        Box->AddChildToVerticalBox(Row1);
+    }
 
     if (UButton* Btn = AddButton(WidgetTree, Row1, TEXT("DbgToggleBtn"), TEXT("Toggle DebugHub"))) { Btn->OnClicked.AddDynamic(this, &UTajsGraphDebugMenuWidget::HandleDebugToggleClicked); }
     if (UButton* Btn = AddButton(WidgetTree, Row1, TEXT("OverlayToggleBtn"), TEXT("Toggle Overlay"))) { Btn->OnClicked.AddDynamic(this, &UTajsGraphDebugMenuWidget::HandleOverlayToggleClicked); }
@@ -1049,8 +1425,12 @@ void UTajsGraphDebugMenuWidget::RebuildDebugReportsTab()
         }
     }
 
-    UHorizontalBox* Row2 = WidgetTree->ConstructWidget<UHorizontalBox>(UHorizontalBox::StaticClass(), TEXT("DebugRow2"));
-    Box->AddChildToVerticalBox(Row2);
+    UHorizontalBox* Row2 = Cast<UHorizontalBox>(SecondaryHost);
+    if (!Row2)
+    {
+        Row2 = WidgetTree->ConstructWidget<UHorizontalBox>(UHorizontalBox::StaticClass(), TEXT("DebugRow2"));
+        Box->AddChildToVerticalBox(Row2);
+    }
 
     if (UButton* Btn = AddButton(WidgetTree, Row2, TEXT("GenerateReportBtn"), TEXT("Generate Report")))
     {
@@ -1072,17 +1452,29 @@ void UTajsGraphDebugMenuWidget::RebuildDebugReportsTab()
         AddTextLine(WidgetTree, Row2, TEXT("Expanded report artifacts"), FLinearColor(0.88f, 0.95f, 1.0f, 1.0f), 9);
     }
 
+    AddTextLine(WidgetTree, Box, FString::Printf(TEXT("Overlay page: %s"), *UEnum::GetValueAsString(DebugSubsystem->GetOverlayPage())));
     AddTextLine(WidgetTree, Box, TEXT("Reports: Saved/TajsGraph/Reports"));
+    AddTextLine(WidgetTree, Box, TEXT("Generate a bundle after reproducing an issue so the latest snapshots are included."));
 }
 
 void UTajsGraphDebugMenuWidget::RebuildProfilesTab()
 {
+    UPanelWidget* const TopHost = FindActivePagePanel(TEXT("ProfilesTopHost"));
+    UPanelWidget* const ActionsHost = FindActivePagePanel(TEXT("ProfilesActionsHost"));
+    UPanelWidget* const ImportHost = FindActivePagePanel(TEXT("ProfilesImportHost"));
+    UPanelWidget* const ExportHost = FindActivePagePanel(TEXT("ProfilesExportHost"));
     UVerticalBox* Box = WidgetTree->ConstructWidget<UVerticalBox>(UVerticalBox::StaticClass(), TEXT("ProfilesBox"));
-    ContentScrollBox->AddChild(Box);
-    AddTextLine(WidgetTree, Box, TEXT("Profiles"), FLinearColor(0.95f, 0.98f, 1.0f, 1.0f), 12);
+    if (UPanelWidget* const ActiveContentHost = GetActivePageBodyHost())
+    {
+        ActiveContentHost->AddChild(Box);
+    }
 
-    UHorizontalBox* SelectRow = WidgetTree->ConstructWidget<UHorizontalBox>(UHorizontalBox::StaticClass(), TEXT("ProfilesSelectRow"));
-    Box->AddChildToVerticalBox(SelectRow);
+    UHorizontalBox* SelectRow = Cast<UHorizontalBox>(TopHost);
+    if (!SelectRow)
+    {
+        SelectRow = WidgetTree->ConstructWidget<UHorizontalBox>(UHorizontalBox::StaticClass(), TEXT("ProfilesSelectRow"));
+        Box->AddChildToVerticalBox(SelectRow);
+    }
 
     ProfilesCombo = WidgetTree->ConstructWidget<UComboBoxString>(UComboBoxString::StaticClass(), TEXT("ProfilesCombo"));
     if (ProfilesCombo)
@@ -1107,8 +1499,12 @@ void UTajsGraphDebugMenuWidget::RebuildProfilesTab()
         }
     }
 
-    UHorizontalBox* Actions = WidgetTree->ConstructWidget<UHorizontalBox>(UHorizontalBox::StaticClass(), TEXT("ProfilesActions"));
-    Box->AddChildToVerticalBox(Actions);
+    UHorizontalBox* Actions = Cast<UHorizontalBox>(ActionsHost);
+    if (!Actions)
+    {
+        Actions = WidgetTree->ConstructWidget<UHorizontalBox>(UHorizontalBox::StaticClass(), TEXT("ProfilesActions"));
+        Box->AddChildToVerticalBox(Actions);
+    }
     if (UButton* Btn = AddButton(WidgetTree, Actions, TEXT("ProfileCreateBtn"), TEXT("Create"))) { Btn->OnClicked.AddDynamic(this, &UTajsGraphDebugMenuWidget::HandleProfileCreateClicked); }
     if (UButton* Btn = AddButton(WidgetTree, Actions, TEXT("ProfileSaveBtn"), TEXT("Save/Overwrite"))) { Btn->OnClicked.AddDynamic(this, &UTajsGraphDebugMenuWidget::HandleProfileSaveClicked); }
     if (UButton* Btn = AddButton(WidgetTree, Actions, TEXT("ProfileLoadBtn"), TEXT("Load -> Draft"))) { Btn->OnClicked.AddDynamic(this, &UTajsGraphDebugMenuWidget::HandleProfileLoadClicked); }
@@ -1116,8 +1512,12 @@ void UTajsGraphDebugMenuWidget::RebuildProfilesTab()
     if (UButton* Btn = AddButton(WidgetTree, Actions, TEXT("ProfileDuplicateBtn"), TEXT("Duplicate"))) { Btn->OnClicked.AddDynamic(this, &UTajsGraphDebugMenuWidget::HandleProfileDuplicateClicked); }
     if (UButton* Btn = AddButton(WidgetTree, Actions, TEXT("ProfileDeleteBtn"), TEXT("Delete"))) { Btn->OnClicked.AddDynamic(this, &UTajsGraphDebugMenuWidget::HandleProfileDeleteClicked); }
 
-    UHorizontalBox* ImportRow = WidgetTree->ConstructWidget<UHorizontalBox>(UHorizontalBox::StaticClass(), TEXT("ProfilesImportRow"));
-    Box->AddChildToVerticalBox(ImportRow);
+    UHorizontalBox* ImportRow = Cast<UHorizontalBox>(ImportHost);
+    if (!ImportRow)
+    {
+        ImportRow = WidgetTree->ConstructWidget<UHorizontalBox>(UHorizontalBox::StaticClass(), TEXT("ProfilesImportRow"));
+        Box->AddChildToVerticalBox(ImportRow);
+    }
 
     ImportPathTextBox = WidgetTree->ConstructWidget<UEditableTextBox>(UEditableTextBox::StaticClass(), TEXT("ImportPathTextBox"));
     if (ImportPathTextBox)
@@ -1132,8 +1532,12 @@ void UTajsGraphDebugMenuWidget::RebuildProfilesTab()
     }
     if (UButton* Btn = AddButton(WidgetTree, ImportRow, TEXT("ImportBtn"), TEXT("Import"))) { Btn->OnClicked.AddDynamic(this, &UTajsGraphDebugMenuWidget::HandleProfileImportClicked); }
 
-    UHorizontalBox* ExportRow = WidgetTree->ConstructWidget<UHorizontalBox>(UHorizontalBox::StaticClass(), TEXT("ProfilesExportRow"));
-    Box->AddChildToVerticalBox(ExportRow);
+    UHorizontalBox* ExportRow = Cast<UHorizontalBox>(ExportHost);
+    if (!ExportRow)
+    {
+        ExportRow = WidgetTree->ConstructWidget<UHorizontalBox>(UHorizontalBox::StaticClass(), TEXT("ProfilesExportRow"));
+        Box->AddChildToVerticalBox(ExportRow);
+    }
 
     ExportPathTextBox = WidgetTree->ConstructWidget<UEditableTextBox>(UEditableTextBox::StaticClass(), TEXT("ExportPathTextBox"));
     if (ExportPathTextBox)
@@ -1149,23 +1553,26 @@ void UTajsGraphDebugMenuWidget::RebuildProfilesTab()
     if (UButton* Btn = AddButton(WidgetTree, ExportRow, TEXT("ExportBtn"), TEXT("Export"))) { Btn->OnClicked.AddDynamic(this, &UTajsGraphDebugMenuWidget::HandleProfileExportClicked); }
 
     AddTextLine(WidgetTree, Box, FString::Printf(TEXT("Profiles directory: %s"), *GetProfilesRootDir()));
+    AddTextLine(WidgetTree, Box, TEXT("Profiles capture the current draft values, not just already-applied settings."));
     RefreshProfileList();
 }
 
 void UTajsGraphDebugMenuWidget::RebuildSettingsRows()
 {
-    if (!ContentScrollBox)
+    if (ActiveTab != ETajsGraphHubTab::Settings)
     {
         return;
     }
 
-    ContentScrollBox->ClearChildren();
-    SettingRows.Reset();
+    RebuildActiveTabContent();
+}
 
-    UVerticalBox* Box = WidgetTree->ConstructWidget<UVerticalBox>(UVerticalBox::StaticClass(), TEXT("SettingsRowsBox"));
-    ContentScrollBox->AddChild(Box);
-
-    AddTextLine(WidgetTree, Box, TEXT("Settings"), FLinearColor(0.95f, 0.98f, 1.0f, 1.0f), 12);
+void UTajsGraphDebugMenuWidget::PopulateSettingsRows(UVerticalBox* Box)
+{
+    if (!Box)
+    {
+        return;
+    }
 
     int32 AddedCount = 0;
     for (const FTajsGraphSettingDescriptor& Descriptor : Descriptors)
@@ -1571,6 +1978,7 @@ void UTajsGraphDebugMenuWidget::SetStatusMessage(const FString& Message)
     {
         StatusText->SetText(FText::FromString(Message));
     }
+    UpdateBoundShellState();
     BP_OnStatusMessageChanged(Message);
 }
 

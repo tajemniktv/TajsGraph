@@ -29,9 +29,41 @@
 #include "TajsGraphFoliageAccess.h"
 
 class AActor;
+class UActorComponent;
+class UObject;
 class UStaticMeshComponent;
 
 namespace TajsGraphInternal {
+
+    enum class ETajsGraphSurfaceCacheTraceKind : uint8
+    {
+        PaintStateBegin,
+        PaintStateEnd,
+        ActiveSwatchChanged,
+        ActivePatternChanged,
+        ActiveMaterialChanged,
+        ActiveSkinChanged,
+        SwatchGroupDefaultChanged,
+        BuildableCustomizationApplied,
+        BuildablePrimitiveDataApplied,
+        HologramCustomizationApplied,
+        StaticMeshRemapAttempt,
+        StaticMeshRemapSkipped,
+        NaniteOverrideAttempt,
+        PreviewGuardEntered,
+        PreviewGuardExited
+    };
+
+    struct FTajsGraphSurfaceCachePreviewState
+    {
+        bool bPaintStateActive = false;
+        double LastMutationTimeSeconds = 0.0;
+        FString ActiveSwatchDesc;
+        FString ActivePatternDesc;
+        FString ActiveMaterialDesc;
+        FString ActiveSkinDesc;
+        FString LastSource;
+    };
 
     struct FPPVConfig {
         bool bEnabled = true;
@@ -52,6 +84,7 @@ namespace TajsGraphInternal {
         bool bEnableAssetRemap = false;
         bool bEnableLogging = false;
         bool bEnableDebugLogging = false;
+        bool bEnableSurfaceCacheTrace = false;
         bool bPollExternalConfigChanges = false;
 
         bool bLumen = true;
@@ -118,9 +151,19 @@ namespace TajsGraphInternal {
 
     bool ShouldGeneralLog();
     bool ShouldDebugLog();
+    bool ShouldSurfaceCacheTraceLog();
 
     bool IsBuildableOwnedActor(const AActor* Owner);
     void ApplyNaniteOverrides(UStaticMeshComponent* Component, const FPPVConfig& Config, const TCHAR* LogContext);
+    bool IsSurfaceCachePreviewActive();
+    bool ShouldGuardSurfaceCacheMutation(const UActorComponent* Component, FString* OutReason = nullptr);
+    FTajsGraphSurfaceCachePreviewState GetSurfaceCachePreviewStateSnapshot();
+    void AddSurfaceCacheTrace(ETajsGraphSurfaceCacheTraceKind Kind, const UObject* ContextObject, const UStaticMeshComponent* Component = nullptr, const FString& Extra = FString(), bool bMutationApplied = false, bool bMutationSkipped = false);
+    void MarkSurfaceCachePaintState(const UObject* ContextObject, bool bActive, const TCHAR* Source);
+    void MarkSurfaceCachePreviewDescriptor(const UObject* ContextObject, ETajsGraphSurfaceCacheTraceKind Kind, const FString& DescriptorPath, const TCHAR* Source);
+    void TouchSurfaceCachePreviewActivity(const UObject* ContextObject, const TCHAR* Source);
+    void DumpSurfaceCacheTrace(int32 MaxCount);
+    void ClearSurfaceCacheTrace();
 
     int32 GetSettingSchemaVersion();
     const TArray<FTajsGraphSettingDescriptor>& GetKnownSettingDescriptors();
@@ -148,8 +191,10 @@ namespace TajsGraphInternal {
     void InstallPPVHooks();
     void InstallStaticMeshRemapHook();
     void InstallColoredInstanceMeshProxyHook();
+    void InstallSurfaceCacheHooks();
 
     constexpr double GConfigRefreshIntervalSeconds = 1.0;
     constexpr double GCVarApplyDelaySeconds = 5.0;
+    constexpr double GSurfaceCachePreviewGraceSeconds = 1.0;
 
 }

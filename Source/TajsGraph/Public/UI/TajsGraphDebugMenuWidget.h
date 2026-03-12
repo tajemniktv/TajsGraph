@@ -12,6 +12,7 @@ class UCanvasPanel;
 class UCheckBox;
 class UComboBoxString;
 class UEditableTextBox;
+class UPanelWidget;
 class UScrollBox;
 class UTextBlock;
 class UVerticalBox;
@@ -149,6 +150,16 @@ private:
     UTajsGraphDebugSubsystem* ResolveDebugSubsystem() const;
 
     void BuildBaseLayout();
+    void ResolveWidgetReferences();
+    void BindButtonHandler(UButton* Button, void (UTajsGraphDebugMenuWidget::*Handler)());
+    void UpdateBoundShellState();
+    void SetPageHeaderCopy(const FString& Title, const FString& Lead);
+    UPanelWidget* GetContentHost() const;
+    UPanelWidget* GetActivePageBodyHost() const;
+    UPanelWidget* FindActivePagePanel(const TCHAR* PrimaryName, const TCHAR* SecondaryName = nullptr) const;
+    UClass* ResolvePageShellClass(ETajsGraphHubTab Tab) const;
+    void CreateActivePageShell();
+    void PopulateSettingsRows(UVerticalBox* Box);
 
     void SetActiveTab(ETajsGraphHubTab NewTab);
     void RebuildActiveTabContent();
@@ -194,6 +205,57 @@ private:
     UScrollBox* ContentScrollBox = nullptr;
 
     UPROPERTY(Transient)
+    UPanelWidget* ContentHost = nullptr;
+
+    UPROPERTY(Transient)
+    UUserWidget* ActivePageShellWidget = nullptr;
+
+    UPROPERTY(Transient)
+    UPanelWidget* ActivePageBodyHost = nullptr;
+
+    UPROPERTY(Transient)
+    UTextBlock* PageTitleText = nullptr;
+
+    UPROPERTY(Transient)
+    UTextBlock* PageLeadText = nullptr;
+
+    UPROPERTY(Transient)
+    UTextBlock* FooterText = nullptr;
+
+    UPROPERTY(Transient)
+    UButton* CloseHubButton = nullptr;
+
+    UPROPERTY(Transient)
+    UButton* OverviewNavButton = nullptr;
+
+    UPROPERTY(Transient)
+    UButton* VisualizationNavButton = nullptr;
+
+    UPROPERTY(Transient)
+    UButton* SettingsNavButton = nullptr;
+
+    UPROPERTY(Transient)
+    UButton* ReportsNavButton = nullptr;
+
+    UPROPERTY(Transient)
+    UButton* ProfilesNavButton = nullptr;
+
+    UPROPERTY(Transient)
+    UTextBlock* OverviewNavLabel = nullptr;
+
+    UPROPERTY(Transient)
+    UTextBlock* VisualizationNavLabel = nullptr;
+
+    UPROPERTY(Transient)
+    UTextBlock* SettingsNavLabel = nullptr;
+
+    UPROPERTY(Transient)
+    UTextBlock* ReportsNavLabel = nullptr;
+
+    UPROPERTY(Transient)
+    UTextBlock* ProfilesNavLabel = nullptr;
+
+    UPROPERTY(Transient)
     UCheckBox* AdvancedCheckBox = nullptr;
 
     UPROPERTY(Transient)
@@ -229,6 +291,7 @@ private:
     ETajsGraphHubTab ActiveTab = ETajsGraphHubTab::Overview;
     FString CurrentSettingsSection;
     bool bShowAdvanced = false;
+    bool bHasExternalSettingsControls = false;
     FString LastStatusMessage;
 
     float RefreshAccumulatorSeconds = 0.0f;

@@ -22,6 +22,14 @@ void ApplyNaniteOverrides(UStaticMeshComponent* Component, const FPPVConfig& Con
         return;
     }
 
+    AddSurfaceCacheTrace(
+        ETajsGraphSurfaceCacheTraceKind::NaniteOverrideAttempt,
+        Component,
+        Component,
+        FString::Printf(TEXT("Context=%s Mesh=%s"), LogContext ? LogContext : TEXT("Component"), Component->GetStaticMesh() ? *Component->GetStaticMesh()->GetPathName() : TEXT("<null>")),
+        false,
+        false);
+
     Component->bDisallowNanite = false;
     Component->bForceDisableNanite = false;
     if (Config.bForceNaniteForMasked) {
