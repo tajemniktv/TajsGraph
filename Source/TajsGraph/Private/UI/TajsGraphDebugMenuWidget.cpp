@@ -554,6 +554,13 @@ void UTajsGraphDebugMenuWidget::HandleCloseClicked()
     {
         DebugSubsystem->CloseHub();
     }
+
+    // Restore input mode and mouse cursor
+    if (APlayerController* PC = GetWorld() ? GetWorld()->GetFirstPlayerController() : nullptr)
+    {
+        PC->SetInputMode(FInputModeGameOnly());
+        PC->bShowMouseCursor = false;
+    }
 }
 
 void UTajsGraphDebugMenuWidget::HandleApplyDraftClicked()
