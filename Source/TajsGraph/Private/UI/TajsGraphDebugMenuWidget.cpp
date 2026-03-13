@@ -681,6 +681,10 @@ void UTajsGraphDebugMenuWidget::HandleAdvancedFilterChanged(const bool bChecked)
 
 void UTajsGraphDebugMenuWidget::HandleSectionSelectionChanged(FString SelectedItem, ESelectInfo::Type SelectionType)
 {
+    if (bInternalComboUpdate)
+    {
+        return;
+    }
     CurrentSettingsSection = SelectedItem;
     RebuildSettingsRows();
 }
@@ -1306,6 +1310,8 @@ void UTajsGraphDebugMenuWidget::RebuildSettingsTab()
         {
             return;
         }
+
+        TGuardValue<bool> ComboGuard(bInternalComboUpdate, true);
 
         SectionCombo->ClearOptions();
         SectionCombo->AddOption(TEXT("All"));

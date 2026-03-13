@@ -291,6 +291,7 @@ private:
     FString CurrentSettingsSection;
     bool bShowAdvanced = false;
     bool bHasExternalSettingsControls = false;
+    bool bInternalComboUpdate = false;
     FString LastStatusMessage;
 
     float RefreshAccumulatorSeconds = 0.0f;
