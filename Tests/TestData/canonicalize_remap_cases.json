@@ -1,0 +1,16 @@
+{
+  "cases": [
+    {
+      "input": "/Game/Props/../Textures/wood.uasset",
+      "expected": "/Game/Textures/wood.uasset"
+    },
+    {
+      "input": "/Game/../Game/Maps/./LevelA.umap",
+      "expected": "/Game/Maps/LevelA.umap"
+    },
+    {
+      "input": "Mods/MyMod/Content/Textures/../Meshes/cube.uasset",
+      "expected": "Mods/MyMod/Content/Meshes/cube.uasset"
+    }
+  ]
+}

@@ -58,27 +58,28 @@ public class TajsGraph : ModuleRules
 			"DummyHeaders",
 		});
 
-		if (Target.Type == TargetRules.TargetType.Editor) {
-			PublicDependencyModuleNames.AddRange(new string[] {/*"OnlineBlueprintSupport",*/ "AnimGraph"});
+		if (Target.Type == TargetRules.TargetType.Editor)
+		{
+			PublicDependencyModuleNames.AddRange(new string[] {/*"OnlineBlueprintSupport",*/ "AnimGraph" });
 		}
-		PublicDependencyModuleNames.AddRange(new string[] {"FactoryGame", "SML"});
+		PublicDependencyModuleNames.AddRange(new string[] { "FactoryGame", "SML" });
 		PublicIncludePaths.AddRange(new string[] {
 			// ... add public include paths required here ...
 		});
-		
+
 		PrivateIncludePaths.AddRange(new string[] {
 			// ... add private include paths required here ...
 		});
-		
+
 		PublicDependencyModuleNames.AddRange(new string[] {
 			// ... add public dependencies that you statically link with here ...
 		});
-		
+
 		PrivateDependencyModuleNames.AddRange(new string[] {
 			// ... add private dependencies that you statically link with here ...	
 			"Projects"
 		});
-		
+
 		DynamicallyLoadedModuleNames.AddRange(new string[] {
 			// ... add any modules that your module loads dynamically here ...
 		});

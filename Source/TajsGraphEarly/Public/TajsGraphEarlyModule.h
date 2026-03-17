@@ -1,3 +1,4 @@
+// Copyright TajemnikTV. All rights reserved.
 #pragma once
 
 #include "CoreMinimal.h"
@@ -20,30 +21,30 @@
 class FTajsGraphEarlyModule : public IModuleInterface
 {
 public:
-	virtual void StartupModule() override;
-	virtual void ShutdownModule() override;
+    virtual void StartupModule() override;
+    virtual void ShutdownModule() override;
 
 private:
-	/** Emits startup diagnostics for platform/feature/library state. */
-	void LogShaderDiagnostics();
+    /** Emits startup diagnostics for platform/feature/library state. */
+    void LogShaderDiagnostics();
 
-	/** Emits D3D12 Agility runtime diagnostics (requested exports, loaded modules, and paths). */
-	void LogD3D12Diagnostics(const TCHAR* PhaseLabel);
+    /** Emits D3D12 Agility runtime diagnostics (requested exports, loaded modules, and paths). */
+    void LogD3D12Diagnostics(const TCHAR *PhaseLabel);
 
-	/**
-	 * Returns whether early cache-load behavior should run.
-	 * This stays disabled in editor builds, where the runtime startup detour is not needed.
-	 */
-	bool ShouldOverrideShaderVerification();
+    /**
+     * Returns whether early cache-load behavior should run.
+     * This stays disabled in editor builds, where the runtime startup detour is not needed.
+     */
+    bool ShouldOverrideShaderVerification();
 
-	/**
-	 * Called via FCoreDelegates::OnPostEngineInit after FShaderCodeLibrary::InitForRuntime
-	 * has run. Opens the loose TajsGraph material shader library and any supplemental
-	 * shader bytecode packs so both global and project/material shader lookups can
-	 * resolve hashes from those archives.
-	 */
-	void OpenShaderLibrariesPostInit();
+    /**
+     * Called via FCoreDelegates::OnPostEngineInit after FShaderCodeLibrary::InitForRuntime
+     * has run. Opens the loose TajsGraph material shader library and any supplemental
+     * shader bytecode packs so both global and project/material shader lookups can
+     * resolve hashes from those archives.
+     */
+    void OpenShaderLibrariesPostInit();
 
-	/** Handle for the OnPostEngineInit delegate so we can unbind after first call. */
-	FDelegateHandle PostEngineInitHandle;
+    /** Handle for the OnPostEngineInit delegate so we can unbind after first call. */
+    FDelegateHandle PostEngineInitHandle;
 };

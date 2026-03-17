@@ -1,0 +1,33 @@
+name: Deploy Astro site to GH Pages
+
+on:
+  push:
+    branches: [ main, master ]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install website dependencies
+        working-directory: Mods/TajsGraph/website
+        run: npm ci
+
+      - name: Build site
+        working-directory: Mods/TajsGraph/website
+        run: npm run build
+
+      - name: Deploy to gh-pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: Mods/TajsGraph/website/dist
+          publish_branch: gh-pages
